@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="source\memory.cpp" />
+    <ClCompile Include="source\core.cpp" />
+    <ClCompile Include="source\dllmain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\memory.h" />
+    <ClInclude Include="source\ini.h" />
+  </ItemGroup>
+</Project>
