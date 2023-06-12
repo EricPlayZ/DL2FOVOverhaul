@@ -17,7 +17,7 @@ An ASI is basically just a DLL file but renamed. A DLL is just a library that pr
 By default, to increase or decrease your FOV, you can press CTRL and + or CTRL and - respectively.
 
 A config file `FOVOverhaul.ini` is stored in the same folder as the mod file. For now, it contains keybind options and a value for safezone FOV reduction (set to 0 by default, -10 is the game's original value).
-Changes made to the config file are constantly refreshed in the mod.
+Changes made to the config file are constantly refreshed in the mod, so you can edit the config file while the game is running.
 If you want to regenerate the config file, delete it and it will automatically create a new file.
 
 ## I'm a newbie, how do I build from source?
@@ -28,7 +28,7 @@ If you want to regenerate the config file, delete it and it will automatically c
 5. The final `FOVOverhaul.asi` file will be located in `DL2FOVOverhaul\x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (renamed to `version.dll` from this README.
 
 ## Credits
-### - [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
+### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
 
 ## License
 This repository is licensed under the [MIT License](LICENSE).
