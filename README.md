@@ -7,7 +7,7 @@ An ASI is basically just a DLL file but renamed. A DLL is just a library that pr
 
 ## Features
 #### - Increase Extra FOV beyond the game's options limit by using the mod's keybindings
-#### - Stop reducing FOV when entering a safezone
+#### - Stop the FOV reduction when entering a safezone
 #### - No need to replace game files or to add paks to the game, because the mod gets injected during game startup using an ASI Loader
 
 ## Requirements
@@ -25,7 +25,7 @@ If you want to regenerate the config file, delete it and it will automatically c
 2. Open the solution
 3. Make sure the `Release` configuration is selected
 4. Click Build -> Build Solution
-5. The final `FOVOverhaul.asi` file will be located in `DL2FOVOverhaul\x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (renamed to `version.dll` from this README.
+5. The final `FOVOverhaul.asi` file will be located in `DL2FOVOverhaul\x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is higher in the Requirements section or down in the Credits section in this README, the DLL is renamed to `version.dll`).
 
 ## Credits
 ### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
