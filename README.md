@@ -19,20 +19,23 @@ An ASI is basically just a DLL file but renamed. A DLL is just a library that pr
 By default, to increase or decrease your FOV, you can press CTRL and + or CTRL and - respectively.
 
 A config file `FOVOverhaul.ini` is stored in the same folder as the mod file. For now, it contains keybind options and a value for safezone FOV reduction (set to 0 by default, 10 is the game's original value).
+
 To change your keybinds, visit [this link from Microsoft](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes) which contains all virtual key codes, and write the name of the keycode you want to use, an example would be `VK_SUBTRACT` for the `FOVDecrease`, which is the minus key on your keyboard for decreasing your FOV. The modifier key is the second key you press, such as CTRL, ALT or SHIFT.
+
 Changes made to the config file are constantly refreshed in the mod, so you can edit the config file while the game is running.
 If you want to regenerate the config file, delete it and it will automatically create a new file.
 
 ## This isn't working anymore, what do I do?
 Pointers unfortunately usually change every game update. To prevent this, there is something called pattern scanning, which searches for a pattern of bytes which should hopefully not change every game update. I'll update the mod in the future with this, to prevent having to update the mod every time the game gets updated as well.
+
 If the mod stops working, wait for me to update the mod, it should not take more than a few days if I have access to my computer.
 
 ## I'm a newbie, how do I build from source?
-1. Clone the repository
-2. Open the solution
-3. Make sure the `Release` configuration is selected
-4. Click Build -> Build Solution
-5. The final `FOVOverhaul.asi` file will be located in `DL2FOVOverhaul\x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is higher in the Requirements section or down in the Credits section in this README, the DLL is renamed to `version.dll`).
+1. Clone the repository.
+2. Open the solution.
+3. Make sure the `Release` configuration is selected.
+4. Click Build -> Build Solution.
+5. The final `FOVOverhaul.asi` file will be located in `DL2FOVOverhaul\x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is up above in the Requirements section or down below in the Credits section; the DLL is renamed to `version.dll` in order for the game to properly detect and use it).
 
 ## Credits
 ### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
