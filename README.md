@@ -1,5 +1,5 @@
 <h1 align="center">
-	<img src="https://github.com/EricPlayZ/DL2FOVOverhaul/blob/master/Extra Files/Images/DL2 FOV Changer - Cropped2.png" width=40%><br>
+	<img src="https://github.com/EricPlayZ/DL2FOVOverhaul/blob/master/Extra Files/Images/DL2 FOV Changer - Cropped.png" width=40%><br>
 	FOV Overhaul - an ASI mod for Dying Light 2<br>
 </h1>
 
