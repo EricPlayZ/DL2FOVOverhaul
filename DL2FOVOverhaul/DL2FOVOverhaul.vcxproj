@@ -85,6 +85,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(SolutionDir)Extra Files\Default Config\FOVOverhaul.ini" "$(SolutionDir)$(PlatformShortName)\$(Configuration)\FOVOverhaul.ini"</Command>
+      <Message>Copying the default config file to the debug build directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -108,6 +112,12 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(SolutionDir)Extra Files\Default Config\FOVOverhaul.ini" "$(SolutionDir)$(PlatformShortName)\$(Configuration)\FOVOverhaul.ini"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying the default config file to the release build directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
