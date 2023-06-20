@@ -331,7 +331,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	int modifierKey = reader.Get<int>("Keybinds", "ModifierKey", VK_CONTROL);
 	int fovIncreaseKey = reader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
 	int fovDecreaseKey = reader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
-	float fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", -10.0f); // Keep original game value if value doesn't exist
+	float fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
 
 	bool fovIncreasePressed = false;
 	bool fovDecreasePressed = false;
@@ -360,7 +360,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 				modifierKey = reader.Get<int>("Keybinds", "ModifierKey", VK_CONTROL);
 				fovIncreaseKey = reader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
 				fovDecreaseKey = reader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
-				fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", -10.0f); // Keep original game value if value doesn't exist
+				fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
 				
 				PrintSuccess("Updated values with new config!");
 			} catch (const std::runtime_error& e) {
@@ -425,14 +425,14 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 				searching = false;
 				PrintSuccess("Found CameraDefaultFOVReduction address at: %p", cameraDefaultFOVReduction);
 
-				*cameraDefaultFOVReduction = fovSafezoneReductionAmount;
+				*cameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 				PrintCustom("[+] CameraDefaultFOVReduction set to %f\n", 10, *cameraDefaultFOVReduction); // Green
             }
         }
 
 		// Always set CameraDefaultFOVReduction to the value specified by the config
-        if (cameraDefaultFOVReduction != NULL && *cameraDefaultFOVReduction != fovSafezoneReductionAmount)
-			*cameraDefaultFOVReduction = fovSafezoneReductionAmount;
+        if (cameraDefaultFOVReduction != NULL && *cameraDefaultFOVReduction != -fovSafezoneReductionAmount)
+			*cameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 
 		// Get key press states
 		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
