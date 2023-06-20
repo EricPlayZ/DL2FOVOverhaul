@@ -13,7 +13,7 @@ An ASI is basically just a DLL file but renamed. A DLL is just a library that pr
 #### - More to come (hopefully)!
 
 ## Requirements
-### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/x64-latest/version.zip) - extract the DLL file from the archive and paste it inside the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`)
+### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/x64-latest/version.zip)
 
 ## Installation
 Download the archive from the [Release](https://github.com/EricPlayZ/DL2FOVOverhaul/releases) section and extract the files from inside the archive to the game's exe folder (`Dying Light 2 Stay Human\ph\work\bin\x64`).
