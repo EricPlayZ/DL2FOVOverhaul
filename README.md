@@ -35,7 +35,7 @@ If the mod stops working, wait for me to update the mod, it should not take more
 2. Open the solution.
 3. Make sure the `Release` configuration is selected.
 4. Click Build -> Build Solution.
-5. The final `FOVOverhaul.asi` file will be located in `DL2FOVOverhaul\x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is up above in the Requirements section or down below in the Credits section; the DLL is renamed to `version.dll` in order for the game to properly detect and use it).
+5. The final `FOVOverhaul.asi` file, alongside the default `FOVOverhaul.ini` config, will be located in `x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is up above in the Requirements section or down below in the Credits section; the DLL **needs to be renamed** to `version.dll` in order for the game to properly detect and use it).
 
 ## Credits
 ### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
