@@ -13,9 +13,17 @@ An ASI is basically just a DLL file but renamed. A DLL is just a library that pr
 #### - More to come (hopefully)!
 
 ## Requirements
-### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/x64-latest/version.zip) - extract the DLL file from the archive and paste it inside the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`)
+### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/download/x64-latest/version.zip)
+
+## Installation
+Download the archive from the [Releases](https://github.com/EricPlayZ/DL2FOVOverhaul/releases) section and extract the files from inside the archive to the game's exe folder (`Dying Light 2 Stay Human\ph\work\bin\x64`).
+
+## Uninstallation
+Delete `version.dll`, `FOVOverhaul.asi` and `FOVOverhaul.ini` from the game's exe folder (`Dying Light 2 Stay Human\ph\work\bin\x64`).
 
 ## How do I use it?
+When you launch the game, a console window will appear. When it does, DON'T CLOSE IT! Closing it would also close the game, as the console window is part of the game theoretically (the DLL gets injected into the game and the DLL allocates a console window, meaning the game process technically created that window, and killing the console window would kill the game process too). Information about the mod's state will be displayed here, including your Extra FOV (and actual FOV) values.
+
 By default, to increase or decrease your FOV, you can press CTRL and + or CTRL and - respectively.
 
 A config file `FOVOverhaul.ini` is stored in the same folder as the mod file. For now, it contains keybind options and a value for safezone FOV reduction (set to 0 by default, 10 is the game's original value).
@@ -24,6 +32,9 @@ To change your keybinds, visit [this link from Microsoft](https://learn.microsof
 
 Changes made to the config file are constantly refreshed in the mod, so you can edit the config file while the game is running.
 If you want to regenerate the config file, delete it and it will automatically create a new file.
+
+## Does this work with Multiplayer?
+This hasn't been tested, so try it at your own risk. It does not directly modify game files, so the game does not detect the game being modified, but there might be an anti-cheat that I don't know about, so again, if anyone is brave enough to try, go ahead and tell me the results, I will update this section afterwards.
 
 ## This isn't working anymore, what do I do?
 Pointers unfortunately usually change every game update. To prevent this, there is something called pattern scanning, which searches for a pattern of bytes which should hopefully not change every game update. I'll update the mod in the future with this, to prevent having to update the mod every time the game gets updated as well.
