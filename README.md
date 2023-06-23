@@ -40,6 +40,7 @@ This hasn't been tested, so try it at your own risk. It does not directly modify
 ~~Pointers unfortunately usually change every game update. To prevent this, there is something called pattern scanning, which searches for a pattern of bytes which should hopefully not change every game update. I'll update the mod in the future with this, to prevent having to update the mod every time the game gets updated as well.~~
 
 ~~If the mod stops working, wait for me to update the mod, it should not take more than a few days if I have access to my computer.~~
+
 Since version 1.0.1, the mod uses pattern scanning to find the necessary pointer for classes. It uses instructions from a function related to Steam lobbies, so this pattern should last a long time without needing an update. This means this mod won't need frequent updating, unless class offsets change, but they should rarely change too.
 
 If there is another reason this mod isn't working, please open an issue and provide as much detail as possible to make it easier for me to debug the issues.
