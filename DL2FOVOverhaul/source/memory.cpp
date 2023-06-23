@@ -1,10 +1,24 @@
-#include <windows.h>
-#include <vector>
+#include <Windows.h>
 #include <Psapi.h>
+#include <malloc.h>
 
 #define INRANGE(x,a,b)		(x >= a && x <= b) 
 #define getBits( x )		(INRANGE(x,'0','9') ? (x - '0') : ((x&(~0x20)) - 'A' + 0xa))
 #define getByte( x )		(getBits(x[0]) << 4 | getBits(x[1]))
+
+const bool IsAddressValid(LPVOID ptr) {
+	const DWORD64 MIN_VALID_ADDRESS = 0x180000000;
+	const DWORD64 MAX_VALID_ADDRESS = 0x7FFFFFFFFFFF;
+
+	const DWORD64 ptrValue = reinterpret_cast<DWORD64>(ptr);
+	return ptrValue != NULL && (ptrValue >= MIN_VALID_ADDRESS && ptrValue <= MAX_VALID_ADDRESS);
+}
+const bool IsAddressValid(DWORD64 ptr) {
+	const DWORD64 MIN_VALID_ADDRESS = 0x180000000;
+	const DWORD64 MAX_VALID_ADDRESS = 0x7FFFFFFFFFFF;
+
+	return ptr != NULL && (ptr >= MIN_VALID_ADDRESS && ptr <= MAX_VALID_ADDRESS);
+}
 
 MODULEINFO GetModuleInfo(const char* szModule) {
 	MODULEINFO modinfo = { 0 };
@@ -14,7 +28,7 @@ MODULEINFO GetModuleInfo(const char* szModule) {
 	return modinfo;
 }
 
-bool IsMatch(const PBYTE addr, const PBYTE pat, const PBYTE msk) {
+static bool IsMatch(const PBYTE addr, const PBYTE pat, const PBYTE msk) {
 	size_t n = 0;
 	while (addr[n] == pat[n] || msk[n] == (BYTE)'?') {
 		if (!msk[++n])
@@ -39,13 +53,15 @@ PBYTE FindPattern(const PBYTE rangeStart, DWORD64 len, const char* pattern) {
 			*msk++ = '?';
 			pattern += ((*(PWORD)pattern == (WORD)'\?\?') ? 2 : 1);
 		} else {
-			*pat++ = getByte(pattern);
+			if (IsAddressValid(pat))
+				*pat++ = getByte(pattern);
 			*msk++ = 'x';
 			pattern += 2;
 		}
 		l++;
 	}
-	*msk = 0;
+	if (IsAddressValid(msk))
+		*msk = 0;
 	pat = patt_base;
 	msk = msk_base;
 	for (DWORD64 n = 0; n < (len - l); ++n) {
@@ -53,12 +69,4 @@ PBYTE FindPattern(const PBYTE rangeStart, DWORD64 len, const char* pattern) {
 			return rangeStart + n;
 	}
 	return NULL;
-}
-
-const bool IsAddressValid(LPVOID ptr) {
-	const DWORD64 MIN_VALID_ADDRESS = 0x180000000;
-	const DWORD64 MAX_VALID_ADDRESS = 0x7FFFFFFFFFFF;
-
-	const DWORD64 ptrValue = reinterpret_cast<DWORD64>(ptr);
-	return ptrValue != NULL && (ptrValue >= MIN_VALID_ADDRESS && ptrValue <= MAX_VALID_ADDRESS);
 }

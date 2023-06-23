@@ -1,10 +1,10 @@
 #pragma once
-#include <windows.h>
-#include <vector>
+#include <Windows.h>
 #include <Psapi.h>
 
-MODULEINFO GetModuleInfo(const char* szModule);
+extern const bool IsAddressValid(LPVOID ptr);
+extern const bool IsAddressValid(DWORD64 ptr);
+
+extern MODULEINFO GetModuleInfo(const char* szModule);
 
 extern PBYTE FindPattern(const PBYTE rangeStart, DWORD64 len, const char* pattern);
-
-extern const bool IsAddressValid(LPVOID ptr);

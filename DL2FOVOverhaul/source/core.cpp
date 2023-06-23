@@ -1,76 +1,11 @@
-#include <windows.h>
+#include <Windows.h>
 #include <iostream>
 #include <chrono>
 #include <filesystem>
 #include "memory.h"
 #include "ini.h"
 #include "game_classes.h"
-
-enum ConsoleColors {
-	c_black,
-	c_blue,
-	c_green,
-	c_aqua,
-	c_red,
-	c_purple,
-	c_yellow,
-	c_white,
-	c_gray,
-	c_lightblue,
-	c_lightgreen,
-	c_lightaqua,
-	c_lightred,
-	c_lightpurple,
-	c_lightyellow,
-	c_brightwhite
-};
-
-template<typename... Args> void PrintError(std::string f, Args... args) {
-	f.insert(0, "[!] ");
-	f.append("\n");
-
-	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, c_red);
-	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, c_white);
-}
-template<typename... Args> void PrintWaiting(std::string f, Args... args) {
-	f.insert(0, "[...] ");
-	f.append("\n");
-
-	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, c_gray);
-	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, c_white);
-}
-template<typename... Args> void PrintInfo(std::string f, Args... args) {
-	f.insert(0, "[.] ");
-	f.append("\n");
-
-	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, c_brightwhite);
-	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, c_white);
-}
-template<typename... Args> void PrintSuccess(std::string f, Args... args) {
-	f.insert(0, "[!] ");
-	f.append("\n");
-
-	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, c_green);
-	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, c_white);
-}
-template<typename... Args> void PrintCustom(std::string f, const ConsoleColors& color, Args... args) {
-	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, color);
-	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, c_white); // White
-}
-
-template <class result_t = std::chrono::milliseconds, class clock_t = std::chrono::steady_clock, class duration_t = std::chrono::milliseconds> auto since(std::chrono::time_point<clock_t, duration_t> const& start) {
-	return std::chrono::duration_cast<result_t>(clock_t::now() - start);
-}
+#include "print.h"
 
 const std::unordered_map<std::string, int> virtualKeyCodes = {
 	// Function keys
@@ -285,20 +220,59 @@ const std::unordered_map<std::string, int> virtualKeyCodes = {
 	{ "VK_OEM_CLEAR", VK_OEM_CLEAR }
 };
 
-void LoadDefaultConfig(inih::INIReader& reader) {
-	reader = inih::INIReader();
-	reader.InsertEntry("Keybinds", "ModifierKey", VK_CONTROL);
-	reader.InsertEntry("Keybinds", "FOVIncrease", VK_ADD);
-	reader.InsertEntry("Keybinds", "FOVDecrease", VK_SUBTRACT);
-	reader.InsertEntry("Options", "FOVSafezoneReductionAmount", 0.0f);
+template <class result_t = std::chrono::milliseconds, class clock_t = std::chrono::steady_clock, class duration_t = std::chrono::milliseconds> auto since(std::chrono::time_point<clock_t, duration_t> const& start) {
+	return std::chrono::duration_cast<result_t>(clock_t::now() - start);
 }
-void LoadAndWriteDefaultConfig(inih::INIReader& reader) {
-	LoadDefaultConfig(reader);
+
+// Config stuff
+const char* configFileName = "FOVOverhaul.ini";
+inih::INIReader configReader{};
+int modifierKey = VK_CONTROL;
+int fovIncreaseKey = VK_ADD;
+int fovDecreaseKey = VK_SUBTRACT;
+float fovSafezoneReductionAmount = 0.0f;
+
+void LoadDefaultConfig(inih::INIReader& configReader) {
+	configReader = inih::INIReader();
+	configReader.InsertEntry("Keybinds", "ModifierKey", VK_CONTROL);
+	configReader.InsertEntry("Keybinds", "FOVIncrease", VK_ADD);
+	configReader.InsertEntry("Keybinds", "FOVDecrease", VK_SUBTRACT);
+	configReader.InsertEntry("Options", "FOVSafezoneReductionAmount", 0.0f);
+
+	modifierKey = VK_CONTROL;
+	fovIncreaseKey = VK_ADD;
+	fovDecreaseKey = VK_SUBTRACT;
+	fovSafezoneReductionAmount = 0.0f;
+}
+void LoadAndWriteDefaultConfig(inih::INIReader& configReader) {
+	LoadDefaultConfig(configReader);
 	try {
 		inih::INIWriter writer{};
-		writer.write("FOVOverhaul.ini", reader);
+		writer.write(configFileName, configReader);
 	} catch (const std::runtime_error& e) {
-		PrintError("Error writing file FOVOverhaul.ini: %s", e.what());
+		PrintError("Error writing file %s: %s", configFileName, e.what());
+	}
+}
+const bool ConfigExists() {
+	return std::filesystem::exists(configFileName);
+}
+void CreateConfig(inih::INIReader& configReader) {
+	PrintError("%s does not exist (will create now); using default config values", configFileName);
+	LoadAndWriteDefaultConfig(configReader);
+}
+void ReadConfig(inih::INIReader& configReader) {
+	try {
+		configReader = inih::INIReader(configFileName);
+
+		modifierKey = configReader.Get<int>("Keybinds", "ModifierKey", VK_CONTROL);
+		fovIncreaseKey = configReader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
+		fovDecreaseKey = configReader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
+		fovSafezoneReductionAmount = configReader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
+
+		PrintSuccess("Successfully read config!");
+	} catch (const std::runtime_error& e) {
+		PrintError("Error reading file %s; using default config values: %s", configFileName, e.what());
+		LoadDefaultConfig(configReader);
 	}
 }
 
@@ -308,26 +282,14 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
     FILE* f;
     freopen_s(&f, "CONOUT$", "w", stdout);
 
-    // Create config file if not exist or read from config file - at startup
-    inih::INIReader reader{};
-    if (!std::filesystem::exists("FOVOverhaul.ini")) {
-		PrintError("FOVOverhaul.ini does not exist (will create now); using default config values");
-		LoadAndWriteDefaultConfig(reader);
-	} else {
-		try {
-			reader = inih::INIReader("FOVOverhaul.ini");
-		} catch (const std::runtime_error& e) {
-			PrintError("Error reading file FOVOverhaul.ini; using default config values: %s", e.what());
-			LoadDefaultConfig(reader);
-		}
-	}
+	ConfigExists() ? ReadConfig(configReader) : CreateConfig(configReader);
 
 	// Storing write time of config file for checking changes to config file
-	std::filesystem::file_time_type configPreviousWriteTime = std::filesystem::last_write_time("FOVOverhaul.ini");
+	std::filesystem::file_time_type configPreviousWriteTime = std::filesystem::last_write_time(configFileName);
 	std::filesystem::file_time_type configLastWriteTime = configPreviousWriteTime;
 
     // Offsets and similar
-	MODULEINFO moduleInfo{};
+	MODULEINFO engineModuleInfo{};
 	const DWORD64 CLobbySteamInstrOffset = 0x1A;
 
 	// Pointers for shortening/cleaning the code a bit
@@ -337,79 +299,58 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	CVideoSettings* CVideoSettingsInstance = NULL;
 	CameraFPPDI* CameraFPPDIInstance = NULL;
 
-    // Key press delay for holding down the key without the value flying in a direction
-    const int keyPressSleepMs = 100;
+    // Key press delay for holding down the key without the value going vroom
+    const int keyPressSleepMs = 120;
     std::chrono::steady_clock::time_point timeStartAfterKeyPress{};
-
-	// Key press handling
-	int modifierKey = reader.Get<int>("Keybinds", "ModifierKey", VK_CONTROL);
-	int fovIncreaseKey = reader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
-	int fovDecreaseKey = reader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
-	float fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
 
 	bool fovIncreasePressed = false;
 	bool fovDecreasePressed = false;
 	bool canPress = false;
 
     // Main loop
-    bool searching = false;
+    bool searchingForAddr = false;
 	while (true) {
 		Sleep(10); // Sleep for a short amount of time to reduce possible CPU performance impact
 
-		// Create config file if not exist
-		if (!std::filesystem::exists("FOVOverhaul.ini")) {
-			PrintError("FOVOverhaul.ini does not exist (will create now); using default config values");
-			LoadAndWriteDefaultConfig(reader);
-			configPreviousWriteTime = std::filesystem::last_write_time("FOVOverhaul.ini");
+		if (!ConfigExists()) {
+			CreateConfig(configReader);
+			Sleep(200);
+			configPreviousWriteTime = std::filesystem::last_write_time(configFileName);
 		}
 
-		// Check for config changes and update values if necessary
-		configLastWriteTime = std::filesystem::last_write_time("FOVOverhaul.ini");
-
+		// Check for config changes
+		configLastWriteTime = std::filesystem::last_write_time(configFileName);
 		if (configLastWriteTime != configPreviousWriteTime) {
 			configPreviousWriteTime = configLastWriteTime;
 			PrintInfo("Config changed! Updating values...");
 
 			Sleep(200);
-
-			try {
-				reader = inih::INIReader("FOVOverhaul.ini");
-
-				modifierKey = reader.Get<int>("Keybinds", "ModifierKey", VK_CONTROL);
-				fovIncreaseKey = reader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
-				fovDecreaseKey = reader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
-				fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
-
-				PrintSuccess("Updated values with new config!");
-			} catch (const std::runtime_error& e) {
-				PrintError("Error reading file FOVOverhaul.ini; using default config values: %s", e.what());
-				LoadDefaultConfig(reader);
-			}
+			ReadConfig(configReader);
 		}
 
 		// Search for the module that contains all the necessary pointers
-		if (moduleInfo.lpBaseOfDll == NULL) {
-			if (!searching) {
-				searching = true;
+		if (!IsAddressValid(engineModuleInfo.lpBaseOfDll)) {
+			if (!searchingForAddr) {
+				searchingForAddr = true;
 				PrintWaiting("Searching for module \"engine_x64_rwdi.dll\"");
 			}
 
-			moduleInfo = GetModuleInfo("engine_x64_rwdi.dll");
-			if (moduleInfo.lpBaseOfDll == NULL)
+			engineModuleInfo = GetModuleInfo("engine_x64_rwdi.dll");
+			if (!IsAddressValid(engineModuleInfo.lpBaseOfDll))
 				continue;
 
-			searching = false;
-			PrintSuccess("Found module \"engine_x64_rwdi.dll\" at: %p\n", moduleInfo.lpBaseOfDll);
+			searchingForAddr = false;
+			PrintSuccess("Found module \"engine_x64_rwdi.dll\" at: %p\n", engineModuleInfo.lpBaseOfDll);
 		}
 
 		if (!IsAddressValid(CLobbySteamLoc)) {
-			if (!searching) {
-				searching = true;
+			if (!searchingForAddr) {
+				searchingForAddr = true;
 				PrintWaiting("Searching for \"CLobbySteam\" class location");
 			}
 
-			const DWORD64 sigAddr = reinterpret_cast<DWORD64>(FindPattern(reinterpret_cast<PBYTE>(moduleInfo.lpBaseOfDll), moduleInfo.SizeOfImage, "74 12 4C 8D 05 ? ? ? ? 48 8B D7")); // jz 0x7ffb303616f2; lea r8, [rip+0x5cc831]; mov rdx, rdi;
-			if (sigAddr == NULL)
+			const DWORD64 sigAddr = reinterpret_cast<DWORD64>(FindPattern(reinterpret_cast<PBYTE>(engineModuleInfo.lpBaseOfDll), engineModuleInfo.SizeOfImage, "74 12 4C 8D 05 ? ? ? ? 48 8B D7")); // jz 0x7ffb303616f2; lea r8, [rip+0x5cc831]; mov rdx, rdi;
+			if (!IsAddressValid(sigAddr))
 				continue;
 
 			const DWORD64 CLobbySteamInstrAddr = sigAddr + CLobbySteamInstrOffset; // mov [rip+0x10e3a54], rax; here we get the address for offset 0x10e3a54, this is the offset we need to get to CLobbySteam
@@ -420,7 +361,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 			if (!IsAddressValid(CLobbySteamLoc))
 				continue;
 
-			searching = false;
+			searchingForAddr = false;
 			PrintSuccess("Found \"CLobbySteam\" class location at: %p\n", CLobbySteamLoc);
 		}
 		if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr))
@@ -442,15 +383,15 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 				PlayerVariablesInstance->CameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 		}
 
-		// Get key press states and check if user can press (cooldown so when you hold the key it doesnt go vroom)
-		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
-		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000;
-		canPress = since(timeStartAfterKeyPress).count() > keyPressSleepMs;
-
 		if (!IsAddressValid(CGameInstance->CVideoSettings_ptr))
 			continue;
 		if (!IsAddressValid(CVideoSettingsInstance))
 			CVideoSettingsInstance = CGameInstance->CVideoSettings_ptr;
+
+		// Get key press states and check if user can press (cooldown so when you hold the key it doesnt go vroom)
+		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
+		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000;
+		canPress = since(timeStartAfterKeyPress).count() > keyPressSleepMs;
 
 		// Increase or decrease FOV
 		if ((fovIncreasePressed || fovDecreasePressed) && canPress) {
