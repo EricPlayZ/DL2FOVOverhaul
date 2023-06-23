@@ -16,8 +16,10 @@
     <ClCompile Include="source\memory.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\game_classes.h" />
     <ClInclude Include="source\ini.h" />
     <ClInclude Include="source\memory.h" />
+    <ClInclude Include="source\print.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
