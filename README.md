@@ -19,7 +19,7 @@ An ASI is basically just a DLL file but renamed. A DLL is just a library that pr
 Download the archive from the [Releases](https://github.com/EricPlayZ/DL2FOVOverhaul/releases) section and extract the files from inside the archive to the game's exe folder (`Dying Light 2 Stay Human\ph\work\bin\x64`).
 
 ## Uninstallation
-Delete `version.dll`, `FOVOverhaul.asi` and `FOVOverhaul.ini` from the game's exe folder (`Dying Light 2 Stay Human\ph\work\bin\x64`).
+Delete `winmm.dll`, `FOVOverhaul.asi` and `FOVOverhaul.ini` from the game's exe folder (`Dying Light 2 Stay Human\ph\work\bin\x64`).
 
 ## How do I use it?
 When you launch the game, a console window will appear. When it does, DON'T CLOSE IT! Closing it would also close the game, as the console window is part of the game theoretically (the DLL gets injected into the game and the DLL allocates a console window, meaning the game process technically created that window, and killing the console window would kill the game process too). Information about the mod's state will be displayed here, including your Extra FOV (and actual FOV) values.
@@ -50,7 +50,7 @@ If there is another reason this mod isn't working, please open an issue and prov
 2. Open the solution.
 3. Make sure the `Release` configuration is selected.
 4. Click Build -> Build Solution.
-5. The final `FOVOverhaul.asi` file, alongside the default `FOVOverhaul.ini` config, will be located in `x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is up above in the Requirements section or down below in the Credits section; the DLL **needs to be renamed** to `version.dll` in order for the game to properly detect and use it).
+5. The final `FOVOverhaul.asi` file, alongside the default `FOVOverhaul.ini` config, will be located in `x64\Release`, paste that in the game's exe directory (`Dying Light 2 Stay Human\ph\work\bin\x64`) alongside the provided ASI Loader (link is up above in the Requirements section or down below in the Credits section; the DLL **needs to be renamed** to `winmm.dll` in order for the game to properly detect and use it).
 
 ## Credits
 ### [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
