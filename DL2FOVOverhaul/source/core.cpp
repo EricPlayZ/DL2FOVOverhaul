@@ -461,8 +461,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 
 			PrintCustom(std::string(fovIncreasePressed ? "[+]" : "[-]") + std::string(" ExtraFOV set to: %f"), c_brightwhite, CVideoSettingsInstance->ExtraFOV);
 
-			if (!IsAddressValid(CameraFPPDIInstance) &&
-			IsAddressValid(CGameInstance->CLevel_ptr) &&
+			if (IsAddressValid(CGameInstance->CLevel_ptr) &&
 			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
 			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
 			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
