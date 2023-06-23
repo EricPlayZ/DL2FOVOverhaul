@@ -37,9 +37,12 @@ If you want to regenerate the config file, delete it and it will automatically c
 This hasn't been tested, so try it at your own risk. It does not directly modify game files, so the game does not detect the game being modified, but there might be an anti-cheat that I don't know about, so again, if anyone is brave enough to try, go ahead and tell me the results, I will update this section afterwards.
 
 ## This isn't working anymore, what do I do?
-Pointers unfortunately usually change every game update. To prevent this, there is something called pattern scanning, which searches for a pattern of bytes which should hopefully not change every game update. I'll update the mod in the future with this, to prevent having to update the mod every time the game gets updated as well.
+~~Pointers unfortunately usually change every game update. To prevent this, there is something called pattern scanning, which searches for a pattern of bytes which should hopefully not change every game update. I'll update the mod in the future with this, to prevent having to update the mod every time the game gets updated as well.~~
 
-If the mod stops working, wait for me to update the mod, it should not take more than a few days if I have access to my computer.
+~~If the mod stops working, wait for me to update the mod, it should not take more than a few days if I have access to my computer.~~
+Since version 1.0.1, the mod uses pattern scanning to find the necessary pointer for classes. It uses instructions from a function related to Steam lobbies, so this pattern should last a long time without needing an update. This means this mod won't need frequent updating, unless class offsets change, but they should rarely change too.
+
+If there is another reason this mod isn't working, please open an issue and provide as much detail as possible to make it easier for me to debug the issues.
 
 ## I'm a newbie, how do I build from source?
 1. Clone the repository.
