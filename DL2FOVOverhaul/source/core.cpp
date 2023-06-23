@@ -6,52 +6,70 @@
 #include "ini.h"
 #include "game_classes.h"
 
-template <class result_t = std::chrono::milliseconds, class clock_t = std::chrono::steady_clock, class duration_t = std::chrono::milliseconds>
-auto since(std::chrono::time_point<clock_t, duration_t> const& start) {
-    return std::chrono::duration_cast<result_t>(clock_t::now() - start);
-}
+enum ConsoleColors {
+	c_black,
+	c_blue,
+	c_green,
+	c_aqua,
+	c_red,
+	c_purple,
+	c_yellow,
+	c_white,
+	c_gray,
+	c_lightblue,
+	c_lightgreen,
+	c_lightaqua,
+	c_lightred,
+	c_lightpurple,
+	c_lightyellow,
+	c_brightwhite
+};
 
 template<typename... Args> void PrintError(std::string f, Args... args) {
 	f.insert(0, "[!] ");
 	f.append("\n");
 
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, 4); // Red
+	SetConsoleTextAttribute(hConsole, c_red);
 	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, 7); // White
+	SetConsoleTextAttribute(hConsole, c_white);
 }
 template<typename... Args> void PrintWaiting(std::string f, Args... args) {
 	f.insert(0, "[...] ");
 	f.append("\n");
 
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, 8); // Gray
+	SetConsoleTextAttribute(hConsole, c_gray);
 	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, 7); // White
+	SetConsoleTextAttribute(hConsole, c_white);
 }
 template<typename... Args> void PrintInfo(std::string f, Args... args) {
 	f.insert(0, "[.] ");
 	f.append("\n");
 
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, 15); // Bright White
+	SetConsoleTextAttribute(hConsole, c_brightwhite);
 	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, 7); // White
+	SetConsoleTextAttribute(hConsole, c_white);
 }
 template<typename... Args> void PrintSuccess(std::string f, Args... args) {
 	f.insert(0, "[!] ");
 	f.append("\n");
 
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, 10); // Green
+	SetConsoleTextAttribute(hConsole, c_green);
 	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, 7); // White
+	SetConsoleTextAttribute(hConsole, c_white);
 }
-template<typename... Args> void PrintCustom(std::string f, const int& color, Args... args) {
+template<typename... Args> void PrintCustom(std::string f, const ConsoleColors& color, Args... args) {
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(hConsole, color);
 	printf(f.c_str(), args...);
-	SetConsoleTextAttribute(hConsole, 7); // White
+	SetConsoleTextAttribute(hConsole, c_white); // White
+}
+
+template <class result_t = std::chrono::milliseconds, class clock_t = std::chrono::steady_clock, class duration_t = std::chrono::milliseconds> auto since(std::chrono::time_point<clock_t, duration_t> const& start) {
+	return std::chrono::duration_cast<result_t>(clock_t::now() - start);
 }
 
 const std::unordered_map<std::string, int> virtualKeyCodes = {
@@ -290,7 +308,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
     FILE* f;
     freopen_s(&f, "CONOUT$", "w", stdout);
 
-    // Handle configuration of the mod
+    // Create config file if not exist or read from config file - at startup
     inih::INIReader reader{};
     if (!std::filesystem::exists("FOVOverhaul.ini")) {
 		PrintError("FOVOverhaul.ini does not exist (will create now); using default config values");
@@ -304,13 +322,15 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 		}
 	}
 
+	// Storing write time of config file for checking changes to config file
 	std::filesystem::file_time_type configPreviousWriteTime = std::filesystem::last_write_time("FOVOverhaul.ini");
 	std::filesystem::file_time_type configLastWriteTime = configPreviousWriteTime;
 
-    // Offsets/base
+    // Offsets and similar
 	MODULEINFO moduleInfo{};
 	const DWORD64 CLobbySteamInstrOffset = 0x1A;
 
+	// Pointers for shortening/cleaning the code a bit
 	CLobbySteam_loc* CLobbySteamLoc = NULL;
 	CGame* CGameInstance = NULL;
 	PlayerVariables* PlayerVariablesInstance = NULL;
@@ -334,14 +354,18 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
     // Main loop
     bool searching = false;
 	while (true) {
-		Sleep(10);
-		// Check for config changes and update values if necessary
+		Sleep(10); // Sleep for a short amount of time to reduce possible CPU performance impact
+
+		// Create config file if not exist
 		if (!std::filesystem::exists("FOVOverhaul.ini")) {
 			PrintError("FOVOverhaul.ini does not exist (will create now); using default config values");
 			LoadAndWriteDefaultConfig(reader);
 			configPreviousWriteTime = std::filesystem::last_write_time("FOVOverhaul.ini");
 		}
+
+		// Check for config changes and update values if necessary
 		configLastWriteTime = std::filesystem::last_write_time("FOVOverhaul.ini");
+
 		if (configLastWriteTime != configPreviousWriteTime) {
 			configPreviousWriteTime = configLastWriteTime;
 			PrintInfo("Config changed! Updating values...");
@@ -399,43 +423,34 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 			searching = false;
 			PrintSuccess("Found \"CLobbySteam\" class location at: %p\n", CLobbySteamLoc);
 		}
-
-		if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr)) {
-			CLobbySteamLoc->CLobbySteam_ptr = CLobbySteamLoc->CLobbySteam_ptr;
-
-			if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr))
-				continue;
-		}
-
-		if (!IsAddressValid(CGameInstance)) {
+		if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr))
+			continue;
+		if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr))
+			continue;
+		if (!IsAddressValid(CGameInstance))
 			CGameInstance = CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr;
 
-			if (!IsAddressValid(CGameInstance))
-				continue;
-		}
-
 		if (IsAddressValid(CGameInstance->CLevel2_ptr) &&
-			IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr) &&
-			IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr) &&
-			IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr)) {
-			PlayerVariablesInstance = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr;
+		IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr) &&
+		IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr) &&
+		IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr)) {
+			if (!IsAddressValid(PlayerVariablesInstance))
+				PlayerVariablesInstance = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr;
 
 			// Always set CameraDefaultFOVReduction to the value specified by the config
 			if (PlayerVariablesInstance->CameraDefaultFOVReduction != -fovSafezoneReductionAmount)
 				PlayerVariablesInstance->CameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 		}
 
-		// Get key press states
+		// Get key press states and check if user can press (cooldown so when you hold the key it doesnt go vroom)
 		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
 		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000;
 		canPress = since(timeStartAfterKeyPress).count() > keyPressSleepMs;
 
-		if (!IsAddressValid(CVideoSettingsInstance)) {
+		if (!IsAddressValid(CGameInstance->CVideoSettings_ptr))
+			continue;
+		if (!IsAddressValid(CVideoSettingsInstance))
 			CVideoSettingsInstance = CGameInstance->CVideoSettings_ptr;
-
-			if (!IsAddressValid(CVideoSettingsInstance))
-				continue;
-		}
 
 		// Increase or decrease FOV
 		if ((fovIncreasePressed || fovDecreasePressed) && canPress) {
@@ -444,18 +459,19 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 			else if (fovDecreasePressed)
 				CVideoSettingsInstance->ExtraFOV--;
 
-			PrintCustom(std::string(fovIncreasePressed ? "[+]" : "[-]") + std::string(" ExtraFOV set to: %f"), 15, CVideoSettingsInstance->ExtraFOV); // Bright White
+			PrintCustom(std::string(fovIncreasePressed ? "[+]" : "[-]") + std::string(" ExtraFOV set to: %f"), c_brightwhite, CVideoSettingsInstance->ExtraFOV);
 
 			if (!IsAddressValid(CameraFPPDIInstance) &&
-				IsAddressValid(CGameInstance->CLevel_ptr) &&
-				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
-				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
-				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
-				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
-				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
-				CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
-			} else if (IsAddressValid(CameraFPPDIInstance))
-				PrintCustom("; Current FOV: %f", 15, CameraFPPDIInstance->FOV); // Bright White
+			IsAddressValid(CGameInstance->CLevel_ptr) &&
+			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
+			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
+			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
+			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
+				if (!IsAddressValid(CameraFPPDIInstance))
+					CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
+
+				PrintCustom("; Current FOV: %f", c_brightwhite, CameraFPPDIInstance->FOV);
+			}
 
 			printf("\n");
 
