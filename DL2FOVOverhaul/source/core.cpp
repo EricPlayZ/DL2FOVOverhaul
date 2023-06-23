@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "memory.h"
 #include "ini.h"
+#include "game_classes.h"
 
 template <class result_t = std::chrono::milliseconds, class clock_t = std::chrono::steady_clock, class duration_t = std::chrono::milliseconds>
 auto since(std::chrono::time_point<clock_t, duration_t> const& start) {
@@ -19,7 +20,6 @@ template<typename... Args> void PrintError(std::string f, Args... args) {
 	printf(f.c_str(), args...);
 	SetConsoleTextAttribute(hConsole, 7); // White
 }
-
 template<typename... Args> void PrintWaiting(std::string f, Args... args) {
 	f.insert(0, "[...] ");
 	f.append("\n");
@@ -29,7 +29,6 @@ template<typename... Args> void PrintWaiting(std::string f, Args... args) {
 	printf(f.c_str(), args...);
 	SetConsoleTextAttribute(hConsole, 7); // White
 }
-
 template<typename... Args> void PrintInfo(std::string f, Args... args) {
 	f.insert(0, "[.] ");
 	f.append("\n");
@@ -39,7 +38,6 @@ template<typename... Args> void PrintInfo(std::string f, Args... args) {
 	printf(f.c_str(), args...);
 	SetConsoleTextAttribute(hConsole, 7); // White
 }
-
 template<typename... Args> void PrintSuccess(std::string f, Args... args) {
 	f.insert(0, "[!] ");
 	f.append("\n");
@@ -49,7 +47,6 @@ template<typename... Args> void PrintSuccess(std::string f, Args... args) {
 	printf(f.c_str(), args...);
 	SetConsoleTextAttribute(hConsole, 7); // White
 }
-
 template<typename... Args> void PrintCustom(std::string f, const int& color, Args... args) {
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(hConsole, color);
@@ -277,7 +274,6 @@ void LoadDefaultConfig(inih::INIReader& reader) {
 	reader.InsertEntry("Keybinds", "FOVDecrease", VK_SUBTRACT);
 	reader.InsertEntry("Options", "FOVSafezoneReductionAmount", 0.0f);
 }
-
 void LoadAndWriteDefaultConfig(inih::INIReader& reader) {
 	LoadDefaultConfig(reader);
 	try {
@@ -312,16 +308,14 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	std::filesystem::file_time_type configLastWriteTime = configPreviousWriteTime;
 
     // Offsets/base
-	HMODULE moduleBase = 0;
-	const DWORD64 IGSObjectBaseAddr = 0x22E5150;
-	const std::vector<DWORD64> extraFOVOffsets = { 0xF8, 0x28, 0x78 };
-	const std::vector<DWORD64> fovOffsets = { 0xF8, 0x388, 0x28, 0x20, 0x18, 0x150, 0x9C };
-	const std::vector<DWORD64> cameraDefaultFOVReductionOffsets = { 0xF8, 0x648, 0x28, 0x20, 0x100, 0xCE0 };
+	MODULEINFO moduleInfo{};
+	const DWORD64 CLobbySteamInstrOffset = 0x1A;
 
-	// Pointers to values
-    float* extraFOV = NULL;
-    float* fov = NULL;
-    float* cameraDefaultFOVReduction = NULL;
+	CLobbySteam_loc* CLobbySteamLoc = NULL;
+	CGame* CGameInstance = NULL;
+	PlayerVariables* PlayerVariablesInstance = NULL;
+	CVideoSettings* CVideoSettingsInstance = NULL;
+	CameraFPPDI* CameraFPPDIInstance = NULL;
 
     // Key press delay for holding down the key without the value flying in a direction
     const int keyPressSleepMs = 100;
@@ -339,7 +333,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 
     // Main loop
     bool searching = false;
-    while (true) {
+	while (true) {
 		Sleep(10);
 		// Check for config changes and update values if necessary
 		if (!std::filesystem::exists("FOVOverhaul.ini")) {
@@ -361,7 +355,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 				fovIncreaseKey = reader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
 				fovDecreaseKey = reader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
 				fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
-				
+
 				PrintSuccess("Updated values with new config!");
 			} catch (const std::runtime_error& e) {
 				PrintError("Error reading file FOVOverhaul.ini; using default config values: %s", e.what());
@@ -370,89 +364,104 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 		}
 
 		// Search for the module that contains all the necessary pointers
-        if (moduleBase == NULL) {
-            if (!searching) {
+		if (moduleInfo.lpBaseOfDll == NULL) {
+			if (!searching) {
 				searching = true;
 				PrintWaiting("Searching for module \"engine_x64_rwdi.dll\"");
-            }
+			}
 
-            moduleBase = GetModuleHandle("engine_x64_rwdi.dll");
-            if (moduleBase == NULL)
-                continue;
-
-			searching = false;
-			PrintSuccess("Found module \"engine_x64_rwdi.dll\" at: %p\n", moduleBase);
-        }
-
-		// Search for the ExtraFOV pointer
-        if (extraFOV == NULL) {
-            if (!searching) {
-				searching = true;
-				PrintWaiting("Searching for ExtraFOV address");
-            }
-
-            extraFOV = (float*)GetPointerAddr((DWORD64)moduleBase + IGSObjectBaseAddr, extraFOVOffsets);
-            if (extraFOV == NULL)
-                continue;
+			moduleInfo = GetModuleInfo("engine_x64_rwdi.dll");
+			if (moduleInfo.lpBaseOfDll == NULL)
+				continue;
 
 			searching = false;
-			PrintSuccess("Found ExtraFOV address at: %p", extraFOV);
-        }
+			PrintSuccess("Found module \"engine_x64_rwdi.dll\" at: %p\n", moduleInfo.lpBaseOfDll);
+		}
 
-		// Search for the FOV pointer
-        if (fov == NULL) {
-            if (!searching) {
+		if (!IsAddressValid(CLobbySteamLoc)) {
+			if (!searching) {
 				searching = true;
-				PrintWaiting("Searching for FOV address");
-            }
+				PrintWaiting("Searching for \"CLobbySteam\" class location");
+			}
 
-            fov = (float*)GetPointerAddr((DWORD64)moduleBase + IGSObjectBaseAddr, fovOffsets);
-            if (fov != NULL) {
-				searching = false;
-				PrintSuccess("Found FOV address at: %p", fov);
-            }
-        }
+			const DWORD64 sigAddr = reinterpret_cast<DWORD64>(FindPattern(reinterpret_cast<PBYTE>(moduleInfo.lpBaseOfDll), moduleInfo.SizeOfImage, "74 12 4C 8D 05 ? ? ? ? 48 8B D7")); // jz 0x7ffb303616f2; lea r8, [rip+0x5cc831]; mov rdx, rdi;
+			if (sigAddr == NULL)
+				continue;
 
-		// Search for the CameraDefaultFOVReduction pointer
-        if (cameraDefaultFOVReduction == NULL && fov != NULL) {
-            if (!searching) {
-				searching = true;
-				PrintWaiting("Searching for CameraDefaultFOVReduction address");
-            }
+			const DWORD64 CLobbySteamInstrAddr = sigAddr + CLobbySteamInstrOffset; // mov [rip+0x10e3a54], rax; here we get the address for offset 0x10e3a54, this is the offset we need to get to CLobbySteam
+			const UINT32 CLobbySteamOffset = *reinterpret_cast<UINT32*>(CLobbySteamInstrAddr); // here we read offset 0x10e3a54 from bytes from the previous addr
+			const DWORD64 CLobbySteamLocAddr = CLobbySteamInstrAddr + 0x4 + static_cast<DWORD64>(CLobbySteamOffset); // final location for CLobbySteam_loc here is the previous addr + 4 bytes (which gets us to mov rax, rbx) + previous offset we got
 
-            cameraDefaultFOVReduction = (float*)GetPointerAddr((DWORD64)moduleBase + IGSObjectBaseAddr, cameraDefaultFOVReductionOffsets);
-            if (cameraDefaultFOVReduction != NULL) {
-				searching = false;
-				PrintSuccess("Found CameraDefaultFOVReduction address at: %p", cameraDefaultFOVReduction);
+			CLobbySteamLoc = reinterpret_cast<CLobbySteam_loc*>(CLobbySteamLocAddr);
+			if (!IsAddressValid(CLobbySteamLoc))
+				continue;
 
-				*cameraDefaultFOVReduction = -fovSafezoneReductionAmount;
-				PrintCustom("[+] CameraDefaultFOVReduction set to %f\n", 10, *cameraDefaultFOVReduction); // Green
-            }
-        }
+			searching = false;
+			PrintSuccess("Found \"CLobbySteam\" class location at: %p\n", CLobbySteamLoc);
+		}
 
-		// Always set CameraDefaultFOVReduction to the value specified by the config
-        if (cameraDefaultFOVReduction != NULL && *cameraDefaultFOVReduction != -fovSafezoneReductionAmount)
-			*cameraDefaultFOVReduction = -fovSafezoneReductionAmount;
+		if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr)) {
+			CLobbySteamLoc->CLobbySteam_ptr = CLobbySteamLoc->CLobbySteam_ptr;
+
+			if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr))
+				continue;
+		}
+
+		if (!IsAddressValid(CGameInstance)) {
+			CGameInstance = CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr;
+
+			if (!IsAddressValid(CGameInstance))
+				continue;
+		}
+
+		if (IsAddressValid(CGameInstance->CLevel2_ptr) &&
+			IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr) &&
+			IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr) &&
+			IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr)) {
+			PlayerVariablesInstance = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr;
+
+			// Always set CameraDefaultFOVReduction to the value specified by the config
+			if (PlayerVariablesInstance->CameraDefaultFOVReduction != -fovSafezoneReductionAmount)
+				PlayerVariablesInstance->CameraDefaultFOVReduction = -fovSafezoneReductionAmount;
+		}
 
 		// Get key press states
 		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
 		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000;
 		canPress = since(timeStartAfterKeyPress).count() > keyPressSleepMs;
 
+		if (!IsAddressValid(CVideoSettingsInstance)) {
+			CVideoSettingsInstance = CGameInstance->CVideoSettings_ptr;
+
+			if (!IsAddressValid(CVideoSettingsInstance))
+				continue;
+		}
+
 		// Increase or decrease FOV
 		if ((fovIncreasePressed || fovDecreasePressed) && canPress) {
 			if (fovIncreasePressed)
-				(*extraFOV)++;
+				CVideoSettingsInstance->ExtraFOV++;
 			else if (fovDecreasePressed)
-				(*extraFOV)--;
+				CVideoSettingsInstance->ExtraFOV--;
 
-			PrintCustom(std::string(fovIncreasePressed ? "[+]" : "[-]") + std::string(" ExtraFOV set to: %f"), 15, *extraFOV); // Bright White
-			if (fov != NULL)
-				PrintCustom("; Current FOV: %f\n", 15, *fov); // Bright White
+			PrintCustom(std::string(fovIncreasePressed ? "[+]" : "[-]") + std::string(" ExtraFOV set to: %f"), 15, CVideoSettingsInstance->ExtraFOV); // Bright White
+
+			if (!IsAddressValid(CameraFPPDIInstance) &&
+				IsAddressValid(CGameInstance->CLevel_ptr) &&
+				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
+				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
+				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
+				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
+				IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
+				CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
+			} else if (IsAddressValid(CameraFPPDIInstance))
+				PrintCustom("; Current FOV: %f", 15, CameraFPPDIInstance->FOV); // Bright White
+
+			printf("\n");
 
 			timeStartAfterKeyPress = std::chrono::steady_clock::now();
 		}
-    }
+	}
 
 	// Close allocated console
     fclose(f);

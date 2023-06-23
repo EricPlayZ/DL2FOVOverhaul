@@ -8,5 +8,6 @@
   <ItemGroup>
     <ClInclude Include="source\memory.h" />
     <ClInclude Include="source\ini.h" />
+    <ClInclude Include="source\game_classes.h" />
   </ItemGroup>
 </Project>
