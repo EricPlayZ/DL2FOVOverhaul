@@ -1,4 +1,4 @@
-#include <windows.h>
+#include <Windows.h>
 #include <iostream>
 #include <filesystem>
 #include "memory.h"
@@ -431,7 +431,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 
 			timeStartAfterKeyPress = std::chrono::steady_clock::now();
 		}
-    }
+	}
 
 	// Close allocated console
     fclose(f);
