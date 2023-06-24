@@ -4,9 +4,14 @@
     <ClCompile Include="source\memory.cpp" />
     <ClCompile Include="source\core.cpp" />
     <ClCompile Include="source\dllmain.cpp" />
+    <ClCompile Include="source\print.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\memory.h" />
     <ClInclude Include="source\ini.h" />
+    <ClInclude Include="source\game_classes.h" />
+    <ClInclude Include="source\print.h" />
+    <ClInclude Include="source\core.h" />
+    <ClInclude Include="source\time_tools.h" />
   </ItemGroup>
 </Project>
