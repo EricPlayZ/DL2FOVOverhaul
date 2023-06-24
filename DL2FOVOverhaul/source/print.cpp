@@ -4,7 +4,7 @@
 #include "time_tools.h"
 
 std::chrono::steady_clock::time_point refreshConsoleTimestamp{};
-const int refreshConsoleIntervalMs = 2000;
+const int refreshConsoleIntervalMs = 250;
 
 LPVOID CLobbySteam_ptr = NULL;
 LPVOID CGame_ptr = NULL;

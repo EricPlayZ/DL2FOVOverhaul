@@ -364,6 +364,14 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 				PlayerVariablesInstance->CameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 		}
 
+		if (IsAddressValid(CGameInstance->CLevel_ptr) &&
+		IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
+		IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
+		IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
+		IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
+			CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
+		}
+
 		if (!IsAddressValid(CGameInstance->CVideoSettings_ptr))
 			continue;
 		if (!IsAddressValid(CVideoSettingsInstance))
