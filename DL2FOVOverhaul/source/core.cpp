@@ -294,24 +294,15 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	MODULEINFO engineModuleInfo{};
 	const DWORD64 CLobbySteamInstrOffset = 0x1A;
 
-	// Pointers for shortening/cleaning the code a bit
-	CLobbySteam_loc* CLobbySteamLoc = NULL;
-	CGame* CGameInstance = NULL;
-	PlayerVariables* PlayerVariablesInstance = NULL;
-	CVideoSettings* CVideoSettingsInstance = NULL;
-	CameraFPPDI* CameraFPPDIInstance = NULL;
+    // Key press delay for holding down the key without the value going vroom
+    const int keyPressSleepMs = 120;
+    std::chrono::steady_clock::time_point timeStartAfterKeyPress{};
 
-    // Key press delay for holding down the key without the value going vroom
-    const int keyPressSleepMs = 120;
-    // Key press delay for holding down the key without the value going vroom
-    const int keyPressSleepMs = 120;
-    // Key press delay for holding down the key without the value going vroom
-    const int keyPressSleepMs = 120;
-	// Key press handling
-	int modifierKey = reader.Get<int>("Keybinds", "ModifierKey", VK_CONTROL);
-	int fovIncreaseKey = reader.Get<int>("Keybinds", "FOVIncrease", VK_ADD);
-	int fovDecreaseKey = reader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
-	float fovSafezoneReductionAmount = reader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
+	bool fovIncreasePressed = false;
+	bool fovDecreasePressed = false;
+	bool canPress = false;
+
+    // Main loop
     bool searchingForAddr = false;
 	while (true) {
 		Sleep(10); // Sleep for a short amount of time to reduce possible CPU performance impact
@@ -322,34 +313,34 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 			CreateConfig(configReader);
 			Sleep(200);
 			configPreviousWriteTime = std::filesystem::last_write_time(configFileName);
-			Sleep(200);
+		}
 
 		// Check for config changes
 		configLastWriteTime = std::filesystem::last_write_time(configFileName);
+		if (configLastWriteTime != configPreviousWriteTime) {
+			configPreviousWriteTime = configLastWriteTime;
+			PrintInfo("Config changed! Updating values...");
+
 			Sleep(200);
-			configPreviousWriteTime = std::filesystem::last_write_time(configFileName);
-			Sleep(200);
-			configPreviousWriteTime = std::filesystem::last_write_time(configFileName);
-		}
 			ReadConfig(configReader);
-				
-				PrintSuccess("Updated values with new config!");
-			} catch (const std::runtime_error& e) {
+		}
+
+		// Search for the module that contains all the necessary pointers
 		if (!IsAddressValid(engineModuleInfo.lpBaseOfDll)) {
 			engineModuleInfo = GetModuleInfo("engine_x64_rwdi.dll");
 			if (!IsAddressValid(engineModuleInfo.lpBaseOfDll))
 				continue;
 		}
-			PrintSuccess("Found module \"engine_x64_rwdi.dll\" at: %p\n", engineModuleInfo.lpBaseOfDll);
+
 		if (!IsAddressValid(CLobbySteamLoc)) {
 			const DWORD64 sigAddr = reinterpret_cast<DWORD64>(FindPattern(reinterpret_cast<PBYTE>(engineModuleInfo.lpBaseOfDll), engineModuleInfo.SizeOfImage, "74 12 4C 8D 05 ? ? ? ? 48 8B D7")); // jz 0x7ffb303616f2; lea r8, [rip+0x5cc831]; mov rdx, rdi;
 			if (!IsAddressValid(sigAddr))
 				continue;
-			if (!IsAddressValid(sigAddr))
+
 			const DWORD64 CLobbySteamInstrAddr = sigAddr + CLobbySteamInstrOffset; // mov [rip+0x10e3a54], rax; here we get the address for offset 0x10e3a54, this is the offset we need to get to CLobbySteam
 			const UINT32 CLobbySteamOffset = *reinterpret_cast<UINT32*>(CLobbySteamInstrAddr); // here we read offset 0x10e3a54 from bytes from the previous addr
 			const DWORD64 CLobbySteamLocAddr = CLobbySteamInstrAddr + 0x4 + static_cast<DWORD64>(CLobbySteamOffset); // final location for CLobbySteam_loc here is the previous addr + 4 bytes (which gets us to mov rax, rbx) + previous offset we got
-		// Search for the FOV pointer
+
 			CLobbySteamLoc = reinterpret_cast<CLobbySteam_loc*>(CLobbySteamLocAddr);
 			if (!IsAddressValid(CLobbySteamLoc))
 				continue;
@@ -360,74 +351,35 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 			continue;
 		if (!IsAddressValid(CGameInstance))
 			CGameInstance = CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr;
-		if (!IsAddressValid(CGameInstance))
+
 		if (IsAddressValid(CGameInstance->CLevel2_ptr) &&
 		IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr) &&
 		IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr) &&
 		IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr)) {
 			if (!IsAddressValid(PlayerVariablesInstance))
 				PlayerVariablesInstance = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr;
-			CGameInstance = CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr;
+
 			// Always set CameraDefaultFOVReduction to the value specified by the config
 			if (PlayerVariablesInstance->CameraDefaultFOVReduction != -fovSafezoneReductionAmount)
 				PlayerVariablesInstance->CameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 		}
-				PrintSuccess("Found CameraDefaultFOVReduction address at: %p", cameraDefaultFOVReduction);
+
 		if (!IsAddressValid(CGameInstance->CVideoSettings_ptr))
 			continue;
 		if (!IsAddressValid(CVideoSettingsInstance))
 			CVideoSettingsInstance = CGameInstance->CVideoSettings_ptr;
-            }
+
 		// Get key press states and check if user can press (cooldown so when you hold the key it doesnt go vroom)
-
-		// Always set CameraDefaultFOVReduction to the value specified by the config
-        if (cameraDefaultFOVReduction != NULL && *cameraDefaultFOVReduction != -fovSafezoneReductionAmount)
-			*cameraDefaultFOVReduction = -fovSafezoneReductionAmount;
-
-		// Get key press states
 		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
-				CVideoSettingsInstance->ExtraFOV++;
+		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000;
 		canPress = since(timeStartAfterKeyPress).count() > keyPressSleepMs;
+
+		// Increase or decrease FOV
+		if ((fovIncreasePressed || fovDecreasePressed) && canPress) {
+			if (fovIncreasePressed)
+				CVideoSettingsInstance->ExtraFOV++;
+			else if (fovDecreasePressed)
 				CVideoSettingsInstance->ExtraFOV--;
-
-			if (IsAddressValid(CGameInstance->CLevel_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
-	}
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
-				if (!IsAddressValid(CameraFPPDIInstance))
-					CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
-
-				PrintCustom("; Current FOV: %f", c_brightwhite, CameraFPPDIInstance->FOV);
-			}
-
-			printf("\n");
-
-			if (IsAddressValid(CGameInstance->CLevel_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
-				if (!IsAddressValid(CameraFPPDIInstance))
-					CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
-
-				PrintCustom("; Current FOV: %f", c_brightwhite, CameraFPPDIInstance->FOV);
-			}
-
-			printf("\n");
-
-			if (IsAddressValid(CGameInstance->CLevel_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr) &&
-			IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
-				if (!IsAddressValid(CameraFPPDIInstance))
-					CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
-
-				PrintCustom("; Current FOV: %f", c_brightwhite, CameraFPPDIInstance->FOV);
-			}
-
-			printf("\n");
 
 			timeStartAfterKeyPress = std::chrono::steady_clock::now();
 		}
