@@ -1,6 +1,9 @@
 #pragma once
 #include "game_classes.h"
 
+extern std::string configStatus;
+extern std::string configError;
+
 // Pointers for shortening/cleaning the code a bit
 extern CLobbySteam_loc* CLobbySteamLoc;
 extern CGame* CGameInstance;

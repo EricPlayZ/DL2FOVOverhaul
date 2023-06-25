@@ -1,6 +1,9 @@
 #include <Windows.h>
 #include <iostream>
 #include <filesystem>
+#include <thread>
+#include <mutex>
+#include <io.h>
 #include "memory.h"
 #include "ini.h"
 #include "game_classes.h"
@@ -220,6 +223,18 @@ const std::unordered_map<std::string, int> virtualKeyCodes = {
 	{ "VK_OEM_CLEAR", VK_OEM_CLEAR }
 };
 
+static std::ostringstream GetTimestamp() {
+	time_t timeInstance = time(0);
+	tm timestamp{};
+	localtime_s(&timestamp, &timeInstance);
+	std::ostringstream oss{};
+	oss << "[" << std::setw(2) << std::setfill('0') << timestamp.tm_hour << "h:"
+		<< std::setw(2) << std::setfill('0') << timestamp.tm_min << "m:"
+		<< std::setw(2) << std::setfill('0') << timestamp.tm_sec << "s] ";
+
+	return oss;
+}
+
 CLobbySteam_loc* CLobbySteamLoc = NULL;
 CGame* CGameInstance = NULL;
 PlayerVariables* PlayerVariablesInstance = NULL;
@@ -233,13 +248,15 @@ LPVOID CLevel2_ptr, CGSObject_ptr, PlayerState_ptr = NULL;
 
 // Config stuff
 const char* configFileName = "FOVOverhaul.ini";
+std::string configStatus{};
+std::string configError{};
 inih::INIReader configReader{};
 int modifierKey = VK_CONTROL;
 int fovIncreaseKey = VK_ADD;
 int fovDecreaseKey = VK_SUBTRACT;
 float fovSafezoneReductionAmount = 0.0f;
 
-void LoadDefaultConfig(inih::INIReader& configReader) {
+static void LoadDefaultConfig(inih::INIReader& configReader) {
 	configReader = inih::INIReader();
 	configReader.InsertEntry("Keybinds", "ModifierKey", VK_CONTROL);
 	configReader.InsertEntry("Keybinds", "FOVIncrease", VK_ADD);
@@ -251,23 +268,28 @@ void LoadDefaultConfig(inih::INIReader& configReader) {
 	fovDecreaseKey = VK_SUBTRACT;
 	fovSafezoneReductionAmount = 0.0f;
 }
-void LoadAndWriteDefaultConfig(inih::INIReader& configReader) {
+static void LoadAndWriteDefaultConfig(inih::INIReader& configReader) {
 	LoadDefaultConfig(configReader);
 	try {
 		inih::INIWriter writer{};
 		writer.write(configFileName, configReader);
 	} catch (const std::runtime_error& e) {
-		PrintError("Error writing file %s: %s", configFileName, e.what());
+		std::ostringstream oss = GetTimestamp();
+		oss << "Error writing file " << configFileName << ": " << e.what();
+		configError = oss.str();
 	}
 }
-const bool ConfigExists() {
+static const bool ConfigExists() {
 	return std::filesystem::exists(configFileName);
 }
-void CreateConfig(inih::INIReader& configReader) {
-	PrintError("%s does not exist (will create now); using default config values", configFileName);
+static void CreateConfig(inih::INIReader& configReader) {
+	std::ostringstream oss = GetTimestamp();
+	oss << configFileName << " does not exist (will create now); using default config values";
+	configStatus = oss.str();
+
 	LoadAndWriteDefaultConfig(configReader);
 }
-void ReadConfig(inih::INIReader& configReader) {
+static void ReadConfig(inih::INIReader& configReader) {
 	try {
 		configReader = inih::INIReader(configFileName);
 
@@ -276,15 +298,20 @@ void ReadConfig(inih::INIReader& configReader) {
 		fovDecreaseKey = configReader.Get<int>("Keybinds", "FOVDecrease", VK_SUBTRACT);
 		fovSafezoneReductionAmount = configReader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
 
-		PrintSuccess("Successfully read config!");
+		std::ostringstream oss = GetTimestamp();
+		oss << "Successfully read config!";
+		configStatus = oss.str();
 	} catch (const std::runtime_error& e) {
-		PrintError("Error reading file %s; using default config values: %s", configFileName, e.what());
+		std::ostringstream oss = GetTimestamp();
+		oss << "Error writing file " << configFileName << "; using default config values: " << e.what();
+		configError = oss.str();
+
 		LoadDefaultConfig(configReader);
 	}
 }
 
 // Pointer stuff
-void ResetPointersCLobbySteam(int level = 0) {
+static void ResetPointersCLobbySteam(int level = 0) {
 	switch (level) {
 	case 0: {
 		CLobbySteam_ptr = NULL;
@@ -302,8 +329,7 @@ void ResetPointersCLobbySteam(int level = 0) {
 	}
 	}
 }
-
-void ResetPointersCLevel(int level = 0) {
+static void ResetPointersCLevel(int level = 0) {
 	switch (level) {
 	case 0: {
 		CLevel_ptr = NULL;
@@ -337,8 +363,7 @@ void ResetPointersCLevel(int level = 0) {
 	}
 	}
 }
-
-void ResetPointersCLevel2(int level = 0) {
+static void ResetPointersCLevel2(int level = 0) {
 	switch (level) {
 	case 0: {
 		CLevel2_ptr = NULL;
@@ -364,8 +389,7 @@ void ResetPointersCLevel2(int level = 0) {
 	}
 	}
 }
-
-void UpdatePointers() {
+static void UpdatePointers() {
 	if (!IsAddressValid(CLobbySteamLoc))
 		return;
 	if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr)) {
@@ -427,11 +451,100 @@ void UpdatePointers() {
 		ResetPointersCLevel2();
 }
 
+// Console stuff
+HANDLE originalStdoutHandle = NULL;
+HANDLE nullStdoutHandle = NULL;
+FILE* consoleDisabledOutStream = NULL;
+FILE* consoleOutConStream = NULL;
+std::mutex consoleMutex;
+
+static void DisableConsoleQuickEdit() {
+	DWORD prev_mode = 0;
+	const HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+	GetConsoleMode(hInput, &prev_mode);
+	SetConsoleMode(hInput, prev_mode & ENABLE_EXTENDED_FLAGS);
+}
+static void SetConsoleWindowSize(const int& width, const int& height) {
+	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	GetConsoleScreenBufferInfo(hConsole, &csbi);
+
+	const SMALL_RECT windowSize = { 0, 0, (SHORT)width - 1, (SHORT)height - 1 };
+	SetConsoleWindowInfo(hConsole, TRUE, &windowSize);
+
+	const COORD bufferSize = { (SHORT)width, (SHORT)height };
+	SetConsoleScreenBufferSize(hConsole, bufferSize);
+}
+static void LockConsoleWindowSize(const int& width, const int& height) {
+	SetConsoleWindowSize(width, height);
+
+	HWND hwndConsole = GetConsoleWindow();
+	if (hwndConsole != NULL) {
+		LONG style = GetWindowLong(hwndConsole, GWL_STYLE);
+		style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+		SetWindowLong(hwndConsole, GWL_STYLE, style);
+		SetWindowPos(hwndConsole, NULL, 0, 0, width, height, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+}
+void DisableStdout() {
+	if (consoleDisabledOutStream == NULL) {
+		if (consoleOutConStream != NULL) {
+			fclose(stdout);
+			fclose(stderr);
+			consoleOutConStream = NULL;
+		}
+
+		if (originalStdoutHandle == NULL) {
+			originalStdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+			nullStdoutHandle = CreateFile("NUL", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+			SetStdHandle(STD_OUTPUT_HANDLE, nullStdoutHandle);
+		}
+
+		freopen_s(&consoleDisabledOutStream, "NUL", "w", stdout);
+		freopen_s(&consoleDisabledOutStream, "NUL", "w", stderr);
+	}
+}
+void RestoreStdout() {
+	if (consoleOutConStream == NULL) {
+		if (consoleDisabledOutStream != NULL) {
+			fclose(stdout);
+			fclose(stderr);
+			consoleDisabledOutStream = NULL;
+		}
+
+		if (originalStdoutHandle != NULL) {
+			SetStdHandle(STD_OUTPUT_HANDLE, originalStdoutHandle);
+			CloseHandle(nullStdoutHandle);
+
+			originalStdoutHandle = NULL;
+			nullStdoutHandle = NULL;
+		}
+
+		freopen_s(&consoleOutConStream, "CONOUT$", "w", stdout);
+		freopen_s(&consoleOutConStream, "CONOUT$", "w", stderr);
+	}
+}
+
+static void ConsoleThread() {
+	while (true) {
+		std::lock_guard<std::mutex> lock(consoleMutex); // Lock the console output to this thread using the consoleMutex
+
+		RestoreStdout();
+		DrawConsoleOut();
+		DisableStdout();
+
+		Sleep(refreshConsoleIntervalMs);
+	}
+}
+
 DWORD64 WINAPI MainThread(HMODULE hModule) {
     // Create a console window
     AllocConsole();
-    FILE* f;
-    freopen_s(&f, "CONOUT$", "w", stdout);
+	DisableStdout();
+
+	DisableConsoleQuickEdit();
+	LockConsoleWindowSize(100, 25);
 
 	ConfigExists() ? ReadConfig(configReader) : CreateConfig(configReader);
 
@@ -451,13 +564,15 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	bool fovDecreasePressed = false;
 	bool canPress = false;
 
+	// Create console output thread
+	std::thread consoleThread(ConsoleThread);
+
     // Main loop
     bool searchingForAddr = false;
 	while (true) {
 		Sleep(10); // Sleep for a short amount of time to reduce possible CPU performance impact
 
 		UpdatePointers();
-		DrawConsoleOut();
 
 		if (!ConfigExists()) {
 			CreateConfig(configReader);
@@ -524,7 +639,8 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	}
 
 	// Close allocated console
-    fclose(f);
+	consoleThread.join();
+	RestoreStdout();
     FreeConsole();
 
     return TRUE;

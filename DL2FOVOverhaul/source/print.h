@@ -64,4 +64,6 @@ template<typename... Args> void PrintCustom(const std::string& f, const ConsoleC
 	SetConsoleTextAttribute(hConsole, c_white); // White
 }
 
+extern const int refreshConsoleIntervalMs;
+
 extern void DrawConsoleOut();
