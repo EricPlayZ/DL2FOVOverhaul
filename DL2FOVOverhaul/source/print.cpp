@@ -2,250 +2,142 @@
 #include "core.h"
 #include "memory.h"
 #include "time_tools.h"
+#include <iostream>
 
 std::chrono::steady_clock::time_point refreshConsoleTimestamp{};
 const int refreshConsoleIntervalMs = 250;
 
-LPVOID CLobbySteam_ptr = NULL;
-LPVOID CGame_ptr = NULL;
+void UpdateConsole(const std::string& text = "", int x = 0, int y = 0) {
+	static const HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
-LPVOID CVideoSettings_ptr = NULL;
+	std::cout.flush();
 
-LPVOID CLevel_ptr = NULL;
-LPVOID CBaseCamera_ptr = NULL;
-LPVOID FreeCamera_ptr = NULL;
-LPVOID CoBaseCameraProxy_ptr = NULL;
-LPVOID CameraFPPDI_ptr = NULL;
-
-LPVOID CLevel2_ptr = NULL;
-LPVOID CGSObject_ptr = NULL;
-LPVOID PlayerState_ptr = NULL;
-LPVOID PlayerVariables_ptr = NULL;
-
-void ResetPointersCLobbySteam(int level = 0) {
-	switch (level) {
-	case 0: {
-		CLobbySteam_ptr = NULL;
-		CGame_ptr = NULL;
-		CVideoSettings_ptr = NULL;
-		break;
-	}
-	case 1: {
-		CGame_ptr = NULL;
-		CVideoSettings_ptr = NULL;
-		break;
-	}
-	case 2: {
-		CVideoSettings_ptr = NULL;
-	}
-	}
+	COORD coord = { (SHORT)x, (SHORT)y };
+	SetConsoleCursorPosition(hOut, coord);
+	if (!text.empty())
+		std::cout << text;
 }
 
-void ResetPointersCLevel(int level = 0) {
-	switch (level) {
-	case 0: {
-		CLevel_ptr = NULL;
-		CBaseCamera_ptr = NULL;
-		FreeCamera_ptr = NULL;
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDI_ptr = NULL;
-		break;
-	}
-	case 1: {
-		CBaseCamera_ptr = NULL;
-		FreeCamera_ptr = NULL;
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDI_ptr = NULL;
-		break;
-	}
-	case 2: {
-		FreeCamera_ptr = NULL;
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDI_ptr = NULL;
-		break;
-	}
-	case 3: {
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDI_ptr = NULL;
-		break;
-	}
-	case 4: {
-		CameraFPPDI_ptr = NULL;
-		break;
-	}
-	}
+int GetCurrentCursorPos() {
+	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	if (GetConsoleScreenBufferInfo(hConsole, &csbi))
+		return csbi.dwCursorPosition.X;
+
+	return -1; // Return -1 if unable to get the console screen buffer info
 }
 
-void ResetPointersCLevel2(int level = 0) {
-	switch (level) {
-	case 0: {
-		CLevel2_ptr = NULL;
-		CGSObject_ptr = NULL;
-		PlayerState_ptr = NULL;
-		PlayerVariables_ptr = NULL;
-		break;
+void PrintSpaces(const int& spaceCount) {
+	std::string spaces = " ";
+	for (int i = 0; i < spaceCount - 2; ++i) {
+		spaces += " ";
 	}
-	case 1: {
-		CGSObject_ptr = NULL;
-		PlayerState_ptr = NULL;
-		PlayerVariables_ptr = NULL;
-		break;
-	}
-	case 2: {
-		PlayerState_ptr = NULL;
-		PlayerVariables_ptr = NULL;
-		break;
-	}
-	case 3: {
-		PlayerVariables_ptr = NULL;
-		break;
-	}
-	}
-}
 
-void UpdatePointers() {
-	if (!IsAddressValid(CLobbySteamLoc))
-		return;
-	if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr)) {
-		ResetPointersCLobbySteam();
-		ResetPointersCLevel();
-		ResetPointersCLevel2();
-		return;
-	}
-	CLobbySteam_ptr = CLobbySteamLoc->CLobbySteam_ptr;
-	if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr)) {
-		ResetPointersCLobbySteam(1);
-		ResetPointersCLevel();
-		ResetPointersCLevel2();
-		return;
-	}
-	CGame_ptr = CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr;
-
-	if (IsAddressValid(CGameInstance->CVideoSettings_ptr))
-		CVideoSettings_ptr = CGameInstance->CVideoSettings_ptr;
-	else
-		ResetPointersCLobbySteam(2);
-
-	if (IsAddressValid(CGameInstance->CLevel_ptr)) {
-		CLevel_ptr = CGameInstance->CLevel_ptr;
-		if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr)) {
-			CBaseCamera_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr;
-			if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr)) {
-				FreeCamera_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr;
-				if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr)) {
-					CoBaseCameraProxy_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr;
-					if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
-						CameraFPPDI_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
-					} else
-						ResetPointersCLevel(4);
-				} else
-					ResetPointersCLevel(3);
-			} else
-				ResetPointersCLevel(2);
-		} else
-			ResetPointersCLevel(1);
-	} else
-		ResetPointersCLevel();
-
-	if (IsAddressValid(CGameInstance->CLevel2_ptr)) {
-		CLevel2_ptr = CGameInstance->CLevel2_ptr;
-		if (IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr)) {
-			CGSObject_ptr = CGameInstance->CLevel2_ptr->CGSObject_ptr;
-			if (IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr)) {
-				PlayerState_ptr = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr;
-				if (IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr)) {
-					PlayerVariables_ptr = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr;
-				} else
-					ResetPointersCLevel2(3);
-			} else
-				ResetPointersCLevel2(2);
-		} else
-			ResetPointersCLevel2(1);
-	} else
-		ResetPointersCLevel2();
+	printf(spaces.c_str());
 }
 
 void DrawConsoleOut() {
 	if (since(refreshConsoleTimestamp).count() < refreshConsoleIntervalMs)
 		return;
 
-	UpdatePointers();
-
-	system("cls");
-
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	int consoleWidth, consoleHeight;
-	GetConsoleScreenBufferInfo(hConsole, &csbi);
-	consoleWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-	consoleHeight = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 
-	std::string fovText = "[.] ExtraFOV: ";
-	fovText.append((CVideoSettings_ptr != NULL ? std::to_string(CVideoSettingsInstance->ExtraFOV) : "???") + "; FOV: ");
-	fovText.append((CameraFPPDI_ptr != NULL ? std::to_string(CameraFPPDIInstance->FOV) : "???"));
+	if (GetConsoleScreenBufferInfo(hConsole, &csbi)) {
+		UpdateConsole();
 
-	COORD fovTextPos{};
-	fovTextPos.X = (consoleWidth - fovText.length()) / 2;
-	SetConsoleCursorPosition(hConsole, fovTextPos);
+		int consoleWidth, consoleHeight;
+		COORD fovTextPos{};
 
-	PrintCustom("[.] ExtraFOV: ", c_brightwhite);
-	if (CVideoSettings_ptr != NULL)
-		PrintCustom("%f", c_green, CVideoSettingsInstance->ExtraFOV);
-	else
-		PrintCustom("???", c_red);
-	PrintCustom("; FOV: ", c_brightwhite);
-	if (CameraFPPDI_ptr != NULL)
-		PrintCustom("%f", c_green, CameraFPPDIInstance->FOV);
-	else
-		PrintCustom("???", c_red);
+		consoleWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+		consoleHeight = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 
-	printf("\n\n");
+		std::string fovText = "[.] ExtraFOV: ";
+		fovText.append((IsAddressValid(CVideoSettingsInstance) ? std::to_string(CVideoSettingsInstance->ExtraFOV) : "???") + "; FOV: ");
+		fovText.append((IsAddressValid(CameraFPPDIInstance) ? std::to_string(CameraFPPDIInstance->FOV) : "???"));
 
-	PrintCustom("[.] CLobbySteam_loc addr: ", c_brightwhite);
-	PrintCustom(CLobbySteamLoc != NULL ? "%p" : "???", CLobbySteamLoc != NULL ? c_green : c_red, CLobbySteamLoc);
-	printf("\n");
-	PrintCustom("[.] CLobbySteam addr: ", c_brightwhite);
-	PrintCustom(CLobbySteam_ptr != NULL ? "%p" : "???", CLobbySteam_ptr != NULL ? c_green : c_red, CLobbySteam_ptr);
-	printf("\n");
-	PrintCustom("[.] CLobbySteam->CGame addr: ", c_brightwhite);
-	PrintCustom(CGame_ptr != NULL ? "%p" : "???", CGame_ptr != NULL ? c_green : c_red, CGame_ptr);
+		// Calculate center for first line in console
+		fovTextPos.X = ((SHORT)consoleWidth - (SHORT)fovText.length()) / 2;
 
-	printf("\n\n");
+		PrintSpaces(static_cast<int>(fovTextPos.X) - GetCurrentCursorPos());
+		SetConsoleCursorPosition(hConsole, fovTextPos);
+		PrintCustom("[.] ExtraFOV: ", c_brightwhite);
+		if (IsAddressValid(CVideoSettingsInstance))
+			PrintCustom("%f", c_green, CVideoSettingsInstance->ExtraFOV);
+		else
+			PrintCustom("???", c_red);
+		PrintCustom("; FOV: ", c_brightwhite);
+		if (IsAddressValid(CameraFPPDIInstance))
+			PrintCustom("%f", c_green, CameraFPPDIInstance->FOV);
+		else
+			PrintCustom("???", c_red);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
 
-	PrintCustom("[.] CGame->CVideoSettings addr: ", c_brightwhite);
-	PrintCustom(CVideoSettings_ptr != NULL ? "%p" : "???", CVideoSettings_ptr != NULL ? c_green : c_red, CVideoSettings_ptr);
+		printf("\n\n");
 
-	printf("\n\n");
+		PrintCustom("[.] CLobbySteam_loc addr: ", c_brightwhite);
+		PrintCustom(IsAddressValid(CLobbySteamLoc) ? "%p" : "???", IsAddressValid(CLobbySteamLoc) ? c_green : c_red, CLobbySteamLoc);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CLobbySteam addr: ", c_brightwhite);
+		PrintCustom(IsAddressValid(CLobbySteam_ptr) ? "%p" : "???", IsAddressValid(CLobbySteam_ptr) ? c_green : c_red, CLobbySteam_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CLobbySteam->CGame addr: ", c_brightwhite);
+		PrintCustom(IsAddressValid(CGameInstance) ? "%p" : "???", IsAddressValid(CGameInstance) ? c_green : c_red, CGameInstance);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
 
-	PrintCustom("[.] CGame->CLevel addr: ", c_brightwhite);
-	PrintCustom(CLevel_ptr != NULL ? "%p" : "???", CLevel_ptr != NULL ? c_green : c_red, CLevel_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel->CBaseCamera addr: ", c_brightwhite);
-	PrintCustom(CBaseCamera_ptr != NULL ? "%p" : "???", CBaseCamera_ptr != NULL ? c_green : c_red, CBaseCamera_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera addr: ", c_brightwhite);
-	PrintCustom(FreeCamera_ptr != NULL ? "%p" : "???", FreeCamera_ptr != NULL ? c_green : c_red, FreeCamera_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera->CoBaseCameraProxy addr: ", c_brightwhite);
-	PrintCustom(CoBaseCameraProxy_ptr != NULL ? "%p" : "???", CoBaseCameraProxy_ptr != NULL ? c_green : c_red, CoBaseCameraProxy_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera->CoBaseCameraProxy->CameraFPPDI addr: ", c_brightwhite);
-	PrintCustom(CameraFPPDI_ptr != NULL ? "%p" : "???", CameraFPPDI_ptr != NULL ? c_green : c_red, CameraFPPDI_ptr);
+		printf("\n\n");
 
-	printf("\n\n");
+		PrintCustom("[.] CGame->CVideoSettings addr: ", c_brightwhite);
+		PrintCustom(IsAddressValid(CVideoSettingsInstance) ? "%p" : "???", IsAddressValid(CVideoSettingsInstance) != NULL ? c_green : c_red, CVideoSettingsInstance);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
 
-	PrintCustom("[.] CGame->CLevel2 addr: ", c_brightwhite);
-	PrintCustom(CLevel2_ptr != NULL ? "%p" : "???", CLevel2_ptr != NULL ? c_green : c_red, CLevel2_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel2->CGSObject addr: ", c_brightwhite);
-	PrintCustom(CGSObject_ptr != NULL ? "%p" : "???", CGSObject_ptr != NULL ? c_green : c_red, CGSObject_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel2->CGSObject->PlayerState addr: ", c_brightwhite);
-	PrintCustom(PlayerState_ptr != NULL ? "%p" : "???", PlayerState_ptr != NULL ? c_green : c_red, PlayerState_ptr);
-	printf("\n");
-	PrintCustom("[.] CGame->CLevel2->CGSObject->PlayerState->PlayerVariables addr: ", c_brightwhite);
-	PrintCustom(PlayerVariables_ptr != NULL ? "%p" : "???", PlayerVariables_ptr != NULL ? c_green : c_red, PlayerVariables_ptr);
-	printf("\n");
+		printf("\n\n");
 
-	refreshConsoleTimestamp = std::chrono::steady_clock::now();
+		PrintCustom("[.] CGame->CLevel addr: ", c_brightwhite);
+		PrintCustom(CLevel_ptr != NULL ? "%p" : "???", CLevel_ptr != NULL ? c_green : c_red, CLevel_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel->CBaseCamera addr: ", c_brightwhite);
+		PrintCustom(CBaseCamera_ptr != NULL ? "%p" : "???", CBaseCamera_ptr != NULL ? c_green : c_red, CBaseCamera_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera addr: ", c_brightwhite);
+		PrintCustom(FreeCamera_ptr != NULL ? "%p" : "???", FreeCamera_ptr != NULL ? c_green : c_red, FreeCamera_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera->CoBaseCameraProxy addr: ", c_brightwhite);
+		PrintCustom(CoBaseCameraProxy_ptr != NULL ? "%p" : "???", CoBaseCameraProxy_ptr != NULL ? c_green : c_red, CoBaseCameraProxy_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera->CoBaseCameraProxy->CameraFPPDI addr: ", c_brightwhite);
+		PrintCustom(IsAddressValid(CameraFPPDIInstance) ? "%p" : "???", IsAddressValid(CameraFPPDIInstance) ? c_green : c_red, CameraFPPDIInstance);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+
+		printf("\n\n");
+
+		PrintCustom("[.] CGame->CLevel2 addr: ", c_brightwhite);
+		PrintCustom(CLevel2_ptr != NULL ? "%p" : "???", CLevel2_ptr != NULL ? c_green : c_red, CLevel2_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel2->CGSObject addr: ", c_brightwhite);
+		PrintCustom(CGSObject_ptr != NULL ? "%p" : "???", CGSObject_ptr != NULL ? c_green : c_red, CGSObject_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel2->CGSObject->PlayerState addr: ", c_brightwhite);
+		PrintCustom(PlayerState_ptr != NULL ? "%p" : "???", PlayerState_ptr != NULL ? c_green : c_red, PlayerState_ptr);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintCustom("[.] CGame->CLevel2->CGSObject->PlayerState->PlayerVariables addr: ", c_brightwhite);
+		PrintCustom(IsAddressValid(PlayerVariablesInstance) ? "%p" : "???", IsAddressValid(PlayerVariablesInstance) ? c_green : c_red, PlayerVariablesInstance);
+		PrintSpaces(consoleWidth - GetCurrentCursorPos());
+		printf("\n");
+		PrintSpaces(consoleWidth);
+		printf("\n");
+		PrintSpaces(consoleWidth);
+
+		refreshConsoleTimestamp = std::chrono::steady_clock::now();
+	}
 }
