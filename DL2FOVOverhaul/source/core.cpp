@@ -289,7 +289,7 @@ static void CreateConfig(inih::INIReader& configReader) {
 
 	LoadAndWriteDefaultConfig(configReader);
 }
-static void ReadConfig(inih::INIReader& configReader) {
+static void ReadConfig(inih::INIReader& configReader, const bool& configUpdate = false) {
 	try {
 		configReader = inih::INIReader(configFileName);
 
@@ -299,7 +299,7 @@ static void ReadConfig(inih::INIReader& configReader) {
 		fovSafezoneReductionAmount = configReader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
 
 		std::ostringstream oss = GetTimestamp();
-		oss << "Successfully read config!";
+		oss << configUpdate ? "Successfully read updated config!" : "Successfully read config!";
 		configStatus = oss.str();
 	} catch (const std::runtime_error& e) {
 		std::ostringstream oss = GetTimestamp();
@@ -584,10 +584,9 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 		configLastWriteTime = std::filesystem::last_write_time(configFileName);
 		if (configLastWriteTime != configPreviousWriteTime) {
 			configPreviousWriteTime = configLastWriteTime;
-			PrintInfo("Config changed! Updating values...");
 
 			Sleep(200);
-			ReadConfig(configReader);
+			ReadConfig(configReader, true);
 		}
 
 		// Search for the module that contains all the necessary pointers
@@ -623,8 +622,8 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 			continue;
 
 		// Get key press states and check if user can press (cooldown so when you hold the key it doesnt go vroom)
-		fovIncreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000;
-		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000;
+		fovIncreasePressed = (GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovIncreaseKey) & 0x8000) || (fovIncreaseKey == VK_ADD && GetAsyncKeyState(modifierKey) & GetAsyncKeyState(VK_OEM_PLUS) & 0x8000) || (fovIncreaseKey == VK_OEM_PLUS && GetAsyncKeyState(modifierKey) & GetAsyncKeyState(VK_ADD) & 0x8000);
+		fovDecreasePressed = GetAsyncKeyState(modifierKey) & GetAsyncKeyState(fovDecreaseKey) & 0x8000 || (fovDecreaseKey == VK_SUBTRACT && GetAsyncKeyState(modifierKey) & GetAsyncKeyState(VK_OEM_MINUS) & 0x8000) || (fovDecreaseKey == VK_OEM_MINUS && GetAsyncKeyState(modifierKey) & GetAsyncKeyState(VK_SUBTRACT) & 0x8000);
 		canPress = since(timeStartAfterKeyPress).count() > keyPressSleepMs;
 
 		// Increase or decrease FOV
