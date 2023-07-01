@@ -299,7 +299,7 @@ static void ReadConfig(inih::INIReader& configReader, const bool& configUpdate =
 		fovSafezoneReductionAmount = configReader.Get<float>("Options", "FOVSafezoneReductionAmount", 10.0f); // Keep original game value if value doesn't exist
 
 		std::ostringstream oss = GetTimestamp();
-		oss << configUpdate ? "Successfully read updated config!" : "Successfully read config!";
+		oss << (configUpdate ? "Successfully read updated config!" : "Successfully read config!");
 		configStatus = oss.str();
 	} catch (const std::runtime_error& e) {
 		std::ostringstream oss = GetTimestamp();
