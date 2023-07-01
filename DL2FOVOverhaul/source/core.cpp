@@ -552,9 +552,8 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	std::filesystem::file_time_type configPreviousWriteTime = std::filesystem::last_write_time(configFileName);
 	std::filesystem::file_time_type configLastWriteTime = configPreviousWriteTime;
 
-    // Offsets and similar
+    // Module stuff
 	MODULEINFO engineModuleInfo{};
-	const DWORD64 CLobbySteamInstrOffset = 0x1A;
 
     // Key press delay for holding down the key without the value going vroom
     const int keyPressSleepMs = 120;
@@ -597,15 +596,7 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 		}
 
 		if (!IsAddressValid(CLobbySteamLoc)) {
-			const DWORD64 sigAddr = reinterpret_cast<DWORD64>(FindPattern(reinterpret_cast<PBYTE>(engineModuleInfo.lpBaseOfDll), engineModuleInfo.SizeOfImage, "74 12 4C 8D 05 ? ? ? ? 48 8B D7")); // jz 0x7ffb303616f2; lea r8, [rip+0x5cc831]; mov rdx, rdi;
-			if (!IsAddressValid(sigAddr))
-				continue;
-
-			const DWORD64 CLobbySteamInstrAddr = sigAddr + CLobbySteamInstrOffset; // mov [rip+0x10e3a54], rax; here we get the address for offset 0x10e3a54, this is the offset we need to get to CLobbySteam
-			const UINT32 CLobbySteamOffset = *reinterpret_cast<UINT32*>(CLobbySteamInstrAddr); // here we read offset 0x10e3a54 from bytes from the previous addr
-			const DWORD64 CLobbySteamLocAddr = CLobbySteamInstrAddr + 0x4 + static_cast<DWORD64>(CLobbySteamOffset); // final location for CLobbySteam_loc here is the previous addr + 4 bytes (which gets us to mov rax, rbx) + previous offset we got
-
-			CLobbySteamLoc = reinterpret_cast<CLobbySteam_loc*>(CLobbySteamLocAddr);
+			CLobbySteamLoc = reinterpret_cast<CLobbySteam_loc*>((DWORD64)engineModuleInfo.lpBaseOfDll + 0x2307DF8);
 			if (!IsAddressValid(CLobbySteamLoc))
 				continue;
 		}
