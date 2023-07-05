@@ -11,18 +11,6 @@
 #include "time_tools.h"
 #include "SigScan\StaticOffsets.h"
 
-static std::ostringstream GetTimestamp() {
-	time_t timeInstance = time(0);
-	tm timestamp{};
-	localtime_s(&timestamp, &timeInstance);
-	std::ostringstream oss{};
-	oss << "[" << std::setw(2) << std::setfill('0') << timestamp.tm_hour << "h:"
-		<< std::setw(2) << std::setfill('0') << timestamp.tm_min << "m:"
-		<< std::setw(2) << std::setfill('0') << timestamp.tm_sec << "s] ";
-
-	return oss;
-}
-
 CLobbySteam* CLobbySteamInstance = NULL;
 CGame* CGameInstance = NULL;
 PlayerVariables* PlayerVariablesInstance = NULL;
