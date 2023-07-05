@@ -109,11 +109,3 @@ public:
 		DEFINE_MEMBER_N(CGame*, CGame_ptr, 0xF8);
 	};
 };
-
-class CLobbySteam_loc {
-public:
-	union {
-		//				Type		Name		Offset
-		DEFINE_MEMBER_0(CLobbySteam*, CLobbySteam_ptr);
-	};
-};

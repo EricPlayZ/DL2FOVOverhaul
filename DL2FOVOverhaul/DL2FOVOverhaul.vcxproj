@@ -15,6 +15,7 @@
     <ClCompile Include="source\dllmain.cpp" />
     <ClCompile Include="source\memory.cpp" />
     <ClCompile Include="source\print.cpp" />
+    <ClCompile Include="source\SigScan\SigScan.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\core.h" />
@@ -22,6 +23,8 @@
     <ClInclude Include="source\ini.h" />
     <ClInclude Include="source\memory.h" />
     <ClInclude Include="source\print.h" />
+    <ClInclude Include="source\SigScan\SigScan.h" />
+    <ClInclude Include="source\SigScan\StaticOffsets.h" />
     <ClInclude Include="source\time_tools.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -115,7 +118,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\GAME Related Stuff\Dying Light 2 Stay Human\ph\work\bin\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)Extra Files\Default Config\FOVOverhaul.ini" "$(SolutionDir)$(PlatformShortName)\$(Configuration)\FOVOverhaul.ini"</Command>

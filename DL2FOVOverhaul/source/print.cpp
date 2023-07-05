@@ -64,22 +64,22 @@ void DrawConsoleOut() {
 
 		// Calculate center in console for lines
 		std::string fovText = "[.] ExtraFOV: ";
-		fovText.append((IsAddressValid(CVideoSettingsInstance) ? std::to_string(CVideoSettingsInstance->ExtraFOV) : "???") + "; FOV: ");
-		fovText.append((IsAddressValid(CameraFPPDIInstance) ? std::to_string(CameraFPPDIInstance->FOV) : "???"));
+		fovText.append((IsValidPtr(CVideoSettingsInstance) ? std::to_string(CVideoSettingsInstance->ExtraFOV) : "???") + "; FOV: ");
+		fovText.append((IsValidPtr(CameraFPPDIInstance) ? std::to_string(CameraFPPDIInstance->FOV) : "???"));
 		const COORD fovTextPos = { ((SHORT)consoleWidth - (SHORT)fovText.length()) / 2 , 0 };
 
 		std::string fovText2 = "[.] Safezone FOV Reduction: ";
-		fovText2.append((IsAddressValid(PlayerVariablesInstance) ? std::to_string(-PlayerVariablesInstance->CameraDefaultFOVReduction) : "???"));
+		fovText2.append((IsValidPtr(PlayerVariablesInstance) ? std::to_string(-PlayerVariablesInstance->CameraDefaultFOVReduction) : "???"));
 		const COORD fovText2Pos = { ((SHORT)consoleWidth - (SHORT)fovText2.length()) / 2 , 0 };
 
 		PrintSpaces((int)fovTextPos.X - GetCurrentCursorPosX());
 		PrintCustom("[.] ExtraFOV: ", c_brightwhite);
-		if (IsAddressValid(CVideoSettingsInstance))
+		if (IsValidPtr(CVideoSettingsInstance))
 			PrintCustom("%f", c_green, CVideoSettingsInstance->ExtraFOV);
 		else
 			PrintCustom("???", c_red);
 		PrintCustom("; FOV: ", c_brightwhite);
-		if (IsAddressValid(CameraFPPDIInstance))
+		if (IsValidPtr(CameraFPPDIInstance))
 			PrintCustom("%f", c_green, CameraFPPDIInstance->FOV);
 		else
 			PrintCustom("???", c_red);
@@ -87,7 +87,7 @@ void DrawConsoleOut() {
 		printf("\n");
 		PrintSpaces((int)fovText2Pos.X - GetCurrentCursorPosX());
 		PrintCustom("[.] Safezone FOV Reduction: ", c_brightwhite);
-		if (IsAddressValid(PlayerVariablesInstance))
+		if (IsValidPtr(PlayerVariablesInstance))
 			PrintCustom("%f", c_green, -PlayerVariablesInstance->CameraDefaultFOVReduction);
 		else
 			PrintCustom("???", c_red);
@@ -120,15 +120,15 @@ void DrawConsoleOut() {
 		printf("\n");
 
 		PrintCustom("[.] CLobbySteam_loc addr: ", c_brightwhite);
-		PrintCustom(IsAddressValid(CLobbySteamLoc) ? "%p" : "???", IsAddressValid(CLobbySteamLoc) ? c_green : c_red, CLobbySteamLoc);
+		PrintCustom(IsValidPtr(CLobbySteamLoc) ? "%p" : "???", IsValidPtr(CLobbySteamLoc) ? c_green : c_red, CLobbySteamLoc);
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 		printf("\n");
 		PrintCustom("[.] CLobbySteam addr: ", c_brightwhite);
-		PrintCustom(IsAddressValid(CLobbySteam_ptr) ? "%p" : "???", IsAddressValid(CLobbySteam_ptr) ? c_green : c_red, CLobbySteam_ptr);
+		PrintCustom(IsValidPtr(CLobbySteamInstance) ? "%p" : "???", IsValidPtr(CLobbySteamInstance) ? c_green : c_red, CLobbySteamInstance);
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 		printf("\n");
 		PrintCustom("[.] CLobbySteam->CGame addr: ", c_brightwhite);
-		PrintCustom(IsAddressValid(CGameInstance) ? "%p" : "???", IsAddressValid(CGameInstance) ? c_green : c_red, CGameInstance);
+		PrintCustom(IsValidPtr(CGameInstance) ? "%p" : "???", IsValidPtr(CGameInstance) ? c_green : c_red, CGameInstance);
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 
 		printf("\n");
@@ -136,7 +136,7 @@ void DrawConsoleOut() {
 		printf("\n");
 
 		PrintCustom("[.] CGame->CVideoSettings addr: ", c_brightwhite);
-		PrintCustom(IsAddressValid(CVideoSettingsInstance) ? "%p" : "???", IsAddressValid(CVideoSettingsInstance) != NULL ? c_green : c_red, CVideoSettingsInstance);
+		PrintCustom(IsValidPtr(CVideoSettingsInstance) ? "%p" : "???", IsValidPtr(CVideoSettingsInstance) != NULL ? c_green : c_red, CVideoSettingsInstance);
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 
 		printf("\n");
@@ -160,7 +160,7 @@ void DrawConsoleOut() {
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 		printf("\n");
 		PrintCustom("[.] CGame->CLevel->CBaseCamera->FreeCamera->CoBaseCameraProxy->CameraFPPDI addr: ", c_brightwhite);
-		PrintCustom(IsAddressValid(CameraFPPDIInstance) ? "%p" : "???", IsAddressValid(CameraFPPDIInstance) ? c_green : c_red, CameraFPPDIInstance);
+		PrintCustom(IsValidPtr(CameraFPPDIInstance) ? "%p" : "???", IsValidPtr(CameraFPPDIInstance) ? c_green : c_red, CameraFPPDIInstance);
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 
 		printf("\n");
@@ -180,7 +180,7 @@ void DrawConsoleOut() {
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 		printf("\n");
 		PrintCustom("[.] CGame->CLevel2->CGSObject->PlayerState->PlayerVariables addr: ", c_brightwhite);
-		PrintCustom(IsAddressValid(PlayerVariablesInstance) ? "%p" : "???", IsAddressValid(PlayerVariablesInstance) ? c_green : c_red, PlayerVariablesInstance);
+		PrintCustom(IsValidPtr(PlayerVariablesInstance) ? "%p" : "???", IsValidPtr(PlayerVariablesInstance) ? c_green : c_red, PlayerVariablesInstance);
 		PrintSpaces(consoleWidth - GetCurrentCursorPosX());
 		printf("\n");
 

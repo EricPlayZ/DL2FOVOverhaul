@@ -9,6 +9,7 @@
 #include "game_classes.h"
 #include "print.h"
 #include "time_tools.h"
+#include "SigScan\StaticOffsets.h"
 
 const std::unordered_map<std::string, int> virtualKeyCodes = {
 	// Function keys
@@ -235,14 +236,14 @@ static std::ostringstream GetTimestamp() {
 	return oss;
 }
 
-CLobbySteam_loc* CLobbySteamLoc = NULL;
+CLobbySteam* CLobbySteamInstance = NULL;
 CGame* CGameInstance = NULL;
 PlayerVariables* PlayerVariablesInstance = NULL;
 CVideoSettings* CVideoSettingsInstance = NULL;
 CameraFPPDI* CameraFPPDIInstance = NULL;
 
 // Pointers to classes
-LPVOID CLobbySteam_ptr = NULL;
+LPVOID CLobbySteamLoc = NULL;
 LPVOID CLevel_ptr, CBaseCamera_ptr, FreeCamera_ptr, CoBaseCameraProxy_ptr = NULL;
 LPVOID CLevel2_ptr, CGSObject_ptr, PlayerState_ptr = NULL;
 
@@ -311,144 +312,42 @@ static void ReadConfig(inih::INIReader& configReader, const bool& configUpdate =
 }
 
 // Pointer stuff
-static void ResetPointersCLobbySteam(int level = 0) {
-	switch (level) {
-	case 0: {
-		CLobbySteam_ptr = NULL;
-		CGameInstance = NULL;
-		CVideoSettingsInstance = NULL;
-		break;
-	}
-	case 1: {
-		CGameInstance = NULL;
-		CVideoSettingsInstance = NULL;
-		break;
-	}
-	case 2: {
-		CVideoSettingsInstance = NULL;
-	}
-	}
-}
-static void ResetPointersCLevel(int level = 0) {
-	switch (level) {
-	case 0: {
-		CLevel_ptr = NULL;
-		CBaseCamera_ptr = NULL;
-		FreeCamera_ptr = NULL;
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDIInstance = NULL;
-		break;
-	}
-	case 1: {
-		CBaseCamera_ptr = NULL;
-		FreeCamera_ptr = NULL;
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDIInstance = NULL;
-		break;
-	}
-	case 2: {
-		FreeCamera_ptr = NULL;
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDIInstance = NULL;
-		break;
-	}
-	case 3: {
-		CoBaseCameraProxy_ptr = NULL;
-		CameraFPPDIInstance = NULL;
-		break;
-	}
-	case 4: {
-		CameraFPPDIInstance = NULL;
-		break;
-	}
-	}
-}
-static void ResetPointersCLevel2(int level = 0) {
-	switch (level) {
-	case 0: {
-		CLevel2_ptr = NULL;
-		CGSObject_ptr = NULL;
-		PlayerState_ptr = NULL;
-		PlayerVariablesInstance = NULL;
-		break;
-	}
-	case 1: {
-		CGSObject_ptr = NULL;
-		PlayerState_ptr = NULL;
-		PlayerVariablesInstance = NULL;
-		break;
-	}
-	case 2: {
-		PlayerState_ptr = NULL;
-		PlayerVariablesInstance = NULL;
-		break;
-	}
-	case 3: {
-		PlayerVariablesInstance = NULL;
-		break;
-	}
-	}
-}
 static void UpdatePointers() {
-	if (!IsAddressValid(CLobbySteamLoc))
+	if (!IsValidPtr(CLobbySteamInstance))
 		return;
-	if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr)) {
-		ResetPointersCLobbySteam();
-		ResetPointersCLevel();
-		ResetPointersCLevel2();
+	if (!IsValidPtr(CLobbySteamInstance->CGame_ptr))
 		return;
-	}
-	CLobbySteam_ptr = CLobbySteamLoc->CLobbySteam_ptr;
-	if (!IsAddressValid(CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr)) {
-		ResetPointersCLobbySteam(1);
-		ResetPointersCLevel();
-		ResetPointersCLevel2();
-		return;
-	}
-	CGameInstance = CLobbySteamLoc->CLobbySteam_ptr->CGame_ptr;
+	CGameInstance = CLobbySteamInstance->CGame_ptr;
 
-	if (IsAddressValid(CGameInstance->CVideoSettings_ptr))
+	if (IsValidPtr(CGameInstance->CVideoSettings_ptr))
 		CVideoSettingsInstance = CGameInstance->CVideoSettings_ptr;
-	else
-		ResetPointersCLobbySteam(2);
 
-	if (IsAddressValid(CGameInstance->CLevel_ptr)) {
+	if (IsValidPtr(CGameInstance->CLevel_ptr)) {
 		CLevel_ptr = CGameInstance->CLevel_ptr;
-		if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr)) {
+		if (IsValidPtr(CGameInstance->CLevel_ptr->CBaseCamera_ptr)) {
 			CBaseCamera_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr;
-			if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr)) {
+			if (IsValidPtr(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr)) {
 				FreeCamera_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr;
-				if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr)) {
+				if (IsValidPtr(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr)) {
 					CoBaseCameraProxy_ptr = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr;
-					if (IsAddressValid(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr)) {
+					if (IsValidPtr(CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr))
 						CameraFPPDIInstance = CGameInstance->CLevel_ptr->CBaseCamera_ptr->FreeCamera_ptr->CoBaseCameraProxy_ptr->CameraFPPDI_ptr;
-					} else
-						ResetPointersCLevel(4);
-				} else
-					ResetPointersCLevel(3);
-			} else
-				ResetPointersCLevel(2);
-		} else
-			ResetPointersCLevel(1);
-	} else
-		ResetPointersCLevel();
+				}
+			}
+		}
+	}
 
-	if (IsAddressValid(CGameInstance->CLevel2_ptr)) {
+	if (IsValidPtr(CGameInstance->CLevel2_ptr)) {
 		CLevel2_ptr = CGameInstance->CLevel2_ptr;
-		if (IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr)) {
+		if (IsValidPtr(CGameInstance->CLevel2_ptr->CGSObject_ptr)) {
 			CGSObject_ptr = CGameInstance->CLevel2_ptr->CGSObject_ptr;
-			if (IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr)) {
+			if (IsValidPtr(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr)) {
 				PlayerState_ptr = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr;
-				if (IsAddressValid(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr)) {
+				if (IsValidPtr(CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr))
 					PlayerVariablesInstance = CGameInstance->CLevel2_ptr->CGSObject_ptr->PlayerState_ptr->PlayerVariables_ptr;
-				} else
-					ResetPointersCLevel2(3);
-			} else
-				ResetPointersCLevel2(2);
-		} else
-			ResetPointersCLevel2(1);
-	} else
-		ResetPointersCLevel2();
+			}
+		}
+	}
 }
 
 // Console stuff
@@ -567,12 +466,12 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 	std::thread consoleThread(ConsoleThread);
 
     // Main loop
-    bool searchingForAddr = false;
 	while (true) {
 		Sleep(10); // Sleep for a short amount of time to reduce possible CPU performance impact
 
 		UpdatePointers();
 
+		// Create config if it doesn't exist
 		if (!ConfigExists()) {
 			CreateConfig(configReader);
 			Sleep(200);
@@ -589,27 +488,28 @@ DWORD64 WINAPI MainThread(HMODULE hModule) {
 		}
 
 		// Search for the module that contains all the necessary pointers
-		if (!IsAddressValid(engineModuleInfo.lpBaseOfDll)) {
+		if (!IsValidPtr(engineModuleInfo.lpBaseOfDll)) {
 			engineModuleInfo = GetModuleInfo("engine_x64_rwdi.dll");
-			if (!IsAddressValid(engineModuleInfo.lpBaseOfDll))
+			if (!IsValidPtr(engineModuleInfo.lpBaseOfDll))
 				continue;
 		}
-
-		if (!IsAddressValid(CLobbySteamLoc)) {
-			CLobbySteamLoc = reinterpret_cast<CLobbySteam_loc*>((DWORD64)engineModuleInfo.lpBaseOfDll + 0x2307DF8);
-			if (!IsAddressValid(CLobbySteamLoc))
+		
+		if (!IsValidPtr(CLobbySteamInstance)) {
+			CLobbySteamLoc = reinterpret_cast<LPVOID>(StaticOffsets::Get_CLobbySteamOffset());
+			CLobbySteamInstance = reinterpret_cast<CLobbySteam*>(*reinterpret_cast<LPVOID*>(StaticOffsets::Get_CLobbySteamOffset()));
+			if (!IsValidPtr(CLobbySteamInstance))
 				continue;
 		}
-		if (!IsAddressValid(CGameInstance))
+		if (!IsValidPtr(CGameInstance))
 			continue;
 
-		if (IsAddressValid(PlayerVariablesInstance)) {
+		if (IsValidPtr(PlayerVariablesInstance)) {
 			// Always set CameraDefaultFOVReduction to the value specified by the config
 			if (PlayerVariablesInstance->CameraDefaultFOVReduction != -fovSafezoneReductionAmount)
 				PlayerVariablesInstance->CameraDefaultFOVReduction = -fovSafezoneReductionAmount;
 		}
 
-		if (!IsAddressValid(CVideoSettingsInstance))
+		if (!IsValidPtr(CVideoSettingsInstance))
 			continue;
 
 		// Get key press states and check if user can press (cooldown so when you hold the key it doesnt go vroom)

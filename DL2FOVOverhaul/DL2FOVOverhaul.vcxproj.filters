@@ -5,6 +5,9 @@
     <ClCompile Include="source\core.cpp" />
     <ClCompile Include="source\dllmain.cpp" />
     <ClCompile Include="source\print.cpp" />
+    <ClCompile Include="source\SigScan\SigScan.cpp">
+      <Filter>SigScan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\memory.h" />
@@ -13,5 +16,16 @@
     <ClInclude Include="source\print.h" />
     <ClInclude Include="source\core.h" />
     <ClInclude Include="source\time_tools.h" />
+    <ClInclude Include="source\SigScan\SigScan.h">
+      <Filter>SigScan</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SigScan\StaticOffsets.h">
+      <Filter>SigScan</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="SigScan">
+      <UniqueIdentifier>{525740fe-17a7-431f-b020-720a1dc32e07}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
