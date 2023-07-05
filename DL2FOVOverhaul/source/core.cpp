@@ -259,9 +259,9 @@ float fovSafezoneReductionAmount = 0.0f;
 
 static void LoadDefaultConfig(inih::INIReader& configReader) {
 	configReader = inih::INIReader();
-	configReader.InsertEntry("Keybinds", "ModifierKey", VK_CONTROL);
-	configReader.InsertEntry("Keybinds", "FOVIncrease", VK_ADD);
-	configReader.InsertEntry("Keybinds", "FOVDecrease", VK_SUBTRACT);
+	configReader.InsertEntry("Keybinds", "ModifierKey", "VK_CONTROL");
+	configReader.InsertEntry("Keybinds", "FOVIncrease", "VK_ADD");
+	configReader.InsertEntry("Keybinds", "FOVDecrease", "VK_SUBTRACT");
 	configReader.InsertEntry("Options", "FOVSafezoneReductionAmount", 0.0f);
 
 	modifierKey = VK_CONTROL;
